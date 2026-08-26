@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Vidriera Digital TV</title>
+  <title>Vidriera Digital Multimedia TV</title>
   <style>
-    /* ==========================================
-       ESTILOS CSS (Pantalla Vertical / Fullscreen)
-       ========================================== */
     * {
       margin: 0;
       padding: 0;
@@ -19,8 +16,8 @@
       height: 100vh;
       background-color: #000000;
       overflow: hidden;
-      cursor: none; /* Oculta el puntero del mouse */
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      cursor: none;
+      font-family: system-ui, -apple-system, sans-serif;
     }
 
     #slider-container {
@@ -29,27 +26,31 @@
       height: 100%;
     }
 
-    /* Estilo y efectos de las imágenes en bucle */
+    /* Elementos multimedia (Imágenes y Videos) */
     .slide {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover; /* Ajusta la foto sin deformarla llenando el 100% de la pantalla */
+      object-fit: cover;
       opacity: 0;
       transform: scale(1);
-      transition: opacity 1.8s ease-in-out, transform 7s ease-out;
+      transition: opacity 1.5s ease-in-out, transform 7s ease-out;
       will-change: opacity, transform;
     }
 
-    /* Estado activo con efecto Zoom sutil (Ken Burns) */
+    /* Los videos no usan zoom CSS para evitar tirones de procesamiento */
+    video.slide {
+      transition: opacity 1.5s ease-in-out;
+      transform: none !important;
+    }
+
     .slide.active {
       opacity: 1;
       transform: scale(1.06);
     }
 
-    /* Indicador visual de estado offline */
     #status-badge {
       position: absolute;
       top: 20px;
@@ -60,9 +61,7 @@
       border-radius: 20px;
       font-size: 14px;
       font-weight: 600;
-      letter-spacing: 0.5px;
       z-index: 100;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
       transition: opacity 0.5s ease;
     }
 
@@ -74,107 +73,135 @@
 </head>
 <body>
 
-  <!-- Contenedor dinámico del slider -->
   <div id="slider-container"></div>
-
-  <!-- Cartel de advertencia en caso de desconexión -->
   <div id="status-badge" class="hidden">Modo Offline</div>
 
-  <!-- ==========================================
-       LÓGICA JAVASCRIPT
-       ========================================== -->
   <script>
     // ------------------------------------------
-    // CONFIGURACIÓN - EDITA ESTOS DATOS
+    // CONFIGURACIÓN - EDITA TUS DATOS AQUÍ
     // ------------------------------------------
     const GITHUB_USER = "TU-USUARIO-DE-GITHUB"; 
     const GITHUB_REPO = "NOMBRE-DE-TU-REPOSITORIO"; 
     const FOLDER_PATH = "imagenes"; 
-    const DURACION_IMAGEN_MS = 7000; // Tiempo en pantalla por imagen (7 segundos)
-    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Consulta si hay fotos nuevas cada 5 minutos
+    const DURACION_IMAGEN_MS = 7000; // Duración para imágenes fijas
+    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Revisa contenido nuevo cada 5 minutos
 
-    // ------------------------------------------
-    // VARIABLES Y ELEMENTOS DEL DOM
-    // ------------------------------------------
     const container = document.getElementById("slider-container");
     const statusBadge = document.getElementById("status-badge");
 
-    let currentImageUrls = [];
+    let mediaItems = [];
     let currentIndex = 0;
-    let loopInterval = null;
+    let stepTimeout = null;
 
-    // Obtiene el listado de imágenes mediante la API pública de GitHub
-    async function fetchImagesFromGitHub() {
+    // Obtener archivos desde la API de GitHub
+    async function fetchMediaFromGitHub() {
       const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FOLDER_PATH}`;
       
       try {
         const response = await fetch(apiUrl);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP Error Status: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const files = await response.json();
         
-        // Filtra por formatos válidos de imagen
-        const imageUrls = files
-          .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
-          .map(file => file.download_url);
+        // Filtra tanto imágenes como videos
+        const newMediaItems = files
+          .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif|mp4|webm)$/i))
+          .map(file => ({
+            url: file.download_url,
+            type: file.name.match(/\.(mp4|webm)$/i) ? 'video' : 'image'
+          }));
 
         statusBadge.classList.add("hidden");
 
-        if (imageUrls.length > 0) {
-          // Si hubo cambios en los archivos, regenera las diapositivas
-          if (JSON.stringify(imageUrls) !== JSON.stringify(currentImageUrls)) {
-            currentImageUrls = imageUrls;
+        if (newMediaItems.length > 0) {
+          if (JSON.stringify(newMediaItems) !== JSON.stringify(mediaItems)) {
+            mediaItems = newMediaItems;
             updateDOMSlides();
           }
         }
       } catch (error) {
-        console.warn("No se pudo sincronizar con GitHub (reproduciendo caché o sin red):", error);
+        console.warn("Sin acceso a red (usando versión en caché):", error);
         statusBadge.classList.remove("hidden");
       }
     }
 
-    // Inyecta los elementos <img> en la estructura HTML
+    // Inyecta las etiquetas <img> o <video> según corresponda
     function updateDOMSlides() {
+      clearTimeout(stepTimeout);
       container.innerHTML = "";
       
-      currentImageUrls.forEach((url, index) => {
-        const img = document.createElement("img");
-        img.src = url;
-        img.classList.add("slide");
+      mediaItems.forEach((item, index) => {
+        let element;
         
-        if (index === 0) {
-          img.classList.add("active");
+        if (item.type === 'video') {
+          element = document.createElement("video");
+          element.src = item.url;
+          element.muted = true; // Requisito de reproducción automática en navegadores
+          element.playsInline = true;
+          element.preload = "auto";
+        } else {
+          element = document.createElement("img");
+          element.src = item.url;
         }
+
+        element.classList.add("slide");
+        if (index === 0) element.classList.add("active");
         
-        container.appendChild(img);
+        container.appendChild(element);
       });
 
       currentIndex = 0;
-      startImageLoop();
+      playCurrentSlide();
     }
 
-    // Bucle continuo de reproducción
-    function startImageLoop() {
-      if (loopInterval) clearInterval(loopInterval);
+    // Lógica del bucle híbrido (Foto vs Video)
+    function playCurrentSlide() {
+      const slides = document.querySelectorAll(".slide");
+      if (slides.length === 0) return;
 
-      loopInterval = setInterval(() => {
-        const slides = document.querySelectorAll(".slide");
-        if (slides.length <= 1) return;
+      const currentSlide = slides[currentIndex];
 
-        slides[currentIndex].classList.remove("active");
-        currentIndex = (currentIndex + 1) % slides.length;
-        slides[currentIndex].classList.add("active");
-      }, DURACION_IMAGEN_MS);
+      if (currentSlide.tagName.toLowerCase() === 'video') {
+        currentSlide.currentTime = 0;
+        
+        // Al terminar el video, pasa automáticamente al siguiente elemento
+        currentSlide.onended = () => nextSlide();
+
+        currentSlide.play().catch(err => {
+          console.warn("Error al reproducir video (saltando):", err);
+          nextSlide();
+        });
+      } else {
+        // Si es imagen, espera la duración configurada
+        stepTimeout = setTimeout(() => {
+          nextSlide();
+        }, DURACION_IMAGEN_MS);
+      }
     }
 
-    // Ejecución inicial
-    fetchImagesFromGitHub();
+    function nextSlide() {
+      const slides = document.querySelectorAll(".slide");
+      if (slides.length <= 1) return;
 
-    // Verificación periódica en segundo plano
-    setInterval(fetchImagesFromGitHub, REFRESCAR_REPOS_MS);
+      const currentSlide = slides[currentIndex];
+      
+      // Si el elemento actual era un video, lo pausa
+      if (currentSlide.tagName.toLowerCase() === 'video') {
+        currentSlide.pause();
+        currentSlide.onended = null;
+      }
+
+      currentSlide.classList.remove("active");
+      
+      currentIndex = (currentIndex + 1) % slides.length;
+      
+      slides[currentIndex].classList.add("active");
+      playCurrentSlide();
+    }
+
+    // Inicio
+    fetchMediaFromGitHub();
+    setInterval(fetchMediaFromGitHub, REFRESCAR_REPOS_MS);
   </script>
 </body>
 </html>
