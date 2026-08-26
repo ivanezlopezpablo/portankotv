@@ -21,12 +21,12 @@
       font-family: system-ui, -apple-system, sans-serif;
     }
 
-    /* FORZAR PANTALLA VERTICAL (Lado izquierdo girado hacia arriba = 270deg) */
+    /* Pantalla Vertical Rotada 270° */
     #slider-container {
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 100vh;  /* Invertimos dimensiones para ajustar al giro */
+      width: 100vh;
       height: 100vw;
       transform: translate(-50%, -50%) rotate(270deg);
       transform-origin: center center;
@@ -40,7 +40,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      object-fit: cover; /* Ajusta sin deformar llenando la pantalla */
+      object-fit: cover;
       opacity: 0;
       z-index: 1;
       transform: scale(1);
@@ -53,10 +53,6 @@
       opacity: 1 !important;
       z-index: 10 !important;
       transform: scale(1.05);
-    }
-
-    video.slide {
-      transform: none !important; /* Desactiva zoom en videos para mayor fluidez */
     }
 
     /* Indicador de estado offline */
@@ -86,24 +82,47 @@
   <div id="slider-container"></div>
   <div id="status-badge" class="hidden">Modo Offline</div>
 
+  <audio id="bg-music" loop preload="auto"></audio>
+
   <script>
     // ------------------------------------------
-    // CONFIGURACIÓN DE TU REPOSITORIO
+    // CONFIGURACIÓN DE TU REPOSITORIO Y MÚSICA
     // ------------------------------------------
     const GITHUB_USER = "ivanezlopezpablo"; 
     const GITHUB_REPO = "portankotv1"; 
     const FOLDER_PATH = "imagenes"; 
-    const DURACION_IMAGEN_MS = 7000; // 7 segundos por imagen
-    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Consulta actualizaciones cada 5 min
+    const DURACION_IMAGEN_MS = 7000; // 7 segundos por foto
+    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Sincroniza fotos cada 5 min
+
+    // URL PÚBLICA DE FIREBASE INTEGRADA
+    const FIREBASE_AUDIO_URL = "https://firebasestorage.googleapis.com/v0/b/digestos-536e1.firebasestorage.app/o/Lumi%20Sin%20Gluten%2FM%C3%BAsica%20Relaxante%20para%20Cl%C3%ADnicas%20Consult%C3%B3rios%20e%20Pilates%20%E2%80%93%20Ambiente%20Calmo%20e%20Profissional.mp3?alt=media&token=ddeae6e0-63d2-4d7f-95c8-14ac0092c2e6";
 
     const container = document.getElementById("slider-container");
     const statusBadge = document.getElementById("status-badge");
+    const bgMusic = document.getElementById("bg-music");
 
     let mediaItems = [];
     let currentIndex = 0;
     let stepTimeout = null;
 
-    // Obtener la lista de archivos desde la API de GitHub
+    // Configuración del reproductor de audio
+    function initBackgroundAudio() {
+      if (!FIREBASE_AUDIO_URL) return;
+
+      bgMusic.src = FIREBASE_AUDIO_URL;
+      bgMusic.volume = 0.5; // Volumen al 50%
+
+      const playAudio = () => {
+        bgMusic.play().catch(err => {
+          console.warn("Autoplay bloqueado. Activa 'Allow Autoplay' en Fully Kiosk:", err);
+        });
+      };
+
+      playAudio();
+      document.addEventListener("click", playAudio, { once: true });
+    }
+
+    // Obtener las imágenes desde GitHub
     async function fetchMediaFromGitHub() {
       const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FOLDER_PATH}?t=${new Date().getTime()}`;
       
@@ -113,101 +132,62 @@
 
         const files = await response.json();
         
-        // Filtrar archivos de imagen y video válidos
         const newMediaItems = files
-          .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif|mp4|webm)$/i))
-          .map(file => ({
-            url: file.download_url,
-            type: file.name.match(/\.(mp4|webm)$/i) ? 'video' : 'image'
-          }));
+          .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
+          .map(file => file.download_url);
 
         statusBadge.classList.add("hidden");
 
         if (newMediaItems.length > 0) {
-          // Si el contenido cambió, regenerar el slider
           if (JSON.stringify(newMediaItems) !== JSON.stringify(mediaItems)) {
             mediaItems = newMediaItems;
             updateDOMSlides();
           }
         }
       } catch (error) {
-        console.warn("Sin respuesta de GitHub API (usando caché o local):", error);
+        console.warn("Error cargando imágenes:", error);
         statusBadge.classList.remove("hidden");
       }
     }
 
-    // Inyectar elementos multimedia en la página
     function updateDOMSlides() {
       clearTimeout(stepTimeout);
       container.innerHTML = "";
       
-      mediaItems.forEach((item, index) => {
-        let element;
-        
-        if (item.type === 'video') {
-          element = document.createElement("video");
-          element.src = item.url;
-          element.muted = true;
-          element.playsInline = true;
-          element.preload = "auto";
-        } else {
-          element = document.createElement("img");
-          element.src = item.url;
-        }
-
-        element.classList.add("slide");
-        if (index === 0) element.classList.add("active");
-        
-        container.appendChild(element);
+      mediaItems.forEach((url, index) => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.classList.add("slide");
+        if (index === 0) img.classList.add("active");
+        container.appendChild(img);
       });
 
       currentIndex = 0;
       playCurrentSlide();
     }
 
-    // Controlar el tiempo de cada imagen o reproducción de video
     function playCurrentSlide() {
       const slides = document.querySelectorAll(".slide");
       if (slides.length === 0) return;
 
-      const currentSlide = slides[currentIndex];
-
-      if (currentSlide.tagName.toLowerCase() === 'video') {
-        currentSlide.currentTime = 0;
-        currentSlide.onended = () => nextSlide();
-
-        currentSlide.play().catch(err => {
-          console.warn("Error reproduciendo video:", err);
-          nextSlide();
-        });
-      } else {
-        stepTimeout = setTimeout(() => {
-          nextSlide();
-        }, DURACION_IMAGEN_MS);
-      }
+      stepTimeout = setTimeout(() => {
+        nextSlide();
+      }, DURACION_IMAGEN_MS);
     }
 
-    // Pasar a la siguiente diapositiva en bucle
     function nextSlide() {
       const slides = document.querySelectorAll(".slide");
       if (slides.length <= 1) return;
 
-      const currentSlide = slides[currentIndex];
-      
-      if (currentSlide.tagName.toLowerCase() === 'video') {
-        currentSlide.pause();
-        currentSlide.onended = null;
-      }
-
-      currentSlide.classList.remove("active");
-      
+      slides[currentIndex].classList.remove("active");
       currentIndex = (currentIndex + 1) % slides.length;
-      
       slides[currentIndex].classList.add("active");
+      
       playCurrentSlide();
     }
 
     // Inicialización
+    initBackgroundAudio();
     fetchMediaFromGitHub();
     setInterval(fetchMediaFromGitHub, REFRESCAR_REPOS_MS);
   </script>
