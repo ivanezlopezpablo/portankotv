@@ -1,97 +1,180 @@
-// ==========================================
-// CONFIGURACIÓN - AJUSTA ESTOS CAMPOS
-// ==========================================
-const GITHUB_USER = "TU-USUARIO-DE-GITHUB"; 
-const GITHUB_REPO = "NOMBRE-DE-TU-REPOSiTORIO"; 
-const FOLDER_PATH = "imagenes"; 
-const DURACION_IMAGEN_MS = 7000; // Tiempo en pantalla (7 segundos)
-const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Revisa si hay fotos nuevas cada 5 min
-
-// ==========================================
-// LÓGICA DEL REPRODUCTOR
-// ==========================================
-const container = document.getElementById("slider-container");
-const statusBadge = document.getElementById("status-badge");
-
-let currentImageUrls = [];
-let currentIndex = 0;
-let loopInterval = null;
-
-// Obtiene la lista de imágenes desde GitHub
-async function fetchImagesFromGitHub() {
-  const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FOLDER_PATH}`;
-  
-  try {
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Error de red: ${response.status}`);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vidriera Digital TV</title>
+  <style>
+    /* ==========================================
+       ESTILOS CSS (Pantalla Vertical / Fullscreen)
+       ========================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    const files = await response.json();
-    
-    // Filtra solo archivos con extensiones de imagen soportadas
-    const imageUrls = files
-      .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
-      .map(file => file.download_url);
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background-color: #000000;
+      overflow: hidden;
+      cursor: none; /* Oculta el puntero del mouse */
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
 
-    statusBadge.classList.add("hidden");
+    #slider-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
 
-    if (imageUrls.length > 0) {
-      // Si la lista de imágenes cambió, actualizamos el slider
-      if (JSON.stringify(imageUrls) !== JSON.stringify(currentImageUrls)) {
-        currentImageUrls = imageUrls;
-        updateDOMSlides();
+    /* Estilo y efectos de las imágenes en bucle */
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Ajusta la foto sin deformarla llenando el 100% de la pantalla */
+      opacity: 0;
+      transform: scale(1);
+      transition: opacity 1.8s ease-in-out, transform 7s ease-out;
+      will-change: opacity, transform;
+    }
+
+    /* Estado activo con efecto Zoom sutil (Ken Burns) */
+    .slide.active {
+      opacity: 1;
+      transform: scale(1.06);
+    }
+
+    /* Indicador visual de estado offline */
+    #status-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(220, 38, 38, 0.85);
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      z-index: 100;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      transition: opacity 0.5s ease;
+    }
+
+    .hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Contenedor dinámico del slider -->
+  <div id="slider-container"></div>
+
+  <!-- Cartel de advertencia en caso de desconexión -->
+  <div id="status-badge" class="hidden">Modo Offline</div>
+
+  <!-- ==========================================
+       LÓGICA JAVASCRIPT
+       ========================================== -->
+  <script>
+    // ------------------------------------------
+    // CONFIGURACIÓN - EDITA ESTOS DATOS
+    // ------------------------------------------
+    const GITHUB_USER = "TU-USUARIO-DE-GITHUB"; 
+    const GITHUB_REPO = "NOMBRE-DE-TU-REPOSITORIO"; 
+    const FOLDER_PATH = "imagenes"; 
+    const DURACION_IMAGEN_MS = 7000; // Tiempo en pantalla por imagen (7 segundos)
+    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Consulta si hay fotos nuevas cada 5 minutos
+
+    // ------------------------------------------
+    // VARIABLES Y ELEMENTOS DEL DOM
+    // ------------------------------------------
+    const container = document.getElementById("slider-container");
+    const statusBadge = document.getElementById("status-badge");
+
+    let currentImageUrls = [];
+    let currentIndex = 0;
+    let loopInterval = null;
+
+    // Obtiene el listado de imágenes mediante la API pública de GitHub
+    async function fetchImagesFromGitHub() {
+      const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FOLDER_PATH}`;
+      
+      try {
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP Error Status: ${response.status}`);
+        }
+
+        const files = await response.json();
+        
+        // Filtra por formatos válidos de imagen
+        const imageUrls = files
+          .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
+          .map(file => file.download_url);
+
+        statusBadge.classList.add("hidden");
+
+        if (imageUrls.length > 0) {
+          // Si hubo cambios en los archivos, regenera las diapositivas
+          if (JSON.stringify(imageUrls) !== JSON.stringify(currentImageUrls)) {
+            currentImageUrls = imageUrls;
+            updateDOMSlides();
+          }
+        }
+      } catch (error) {
+        console.warn("No se pudo sincronizar con GitHub (reproduciendo caché o sin red):", error);
+        statusBadge.classList.remove("hidden");
       }
     }
-  } catch (error) {
-    console.warn("No se pudo conectar a GitHub API (usando caché o sin conexión):", error);
-    statusBadge.classList.remove("hidden");
-  }
-}
 
-// Genera los elementos IMG en la página
-function updateDOMSlides() {
-  container.innerHTML = "";
-  
-  currentImageUrls.forEach((url, index) => {
-    const img = document.createElement("img");
-    img.src = url;
-    img.classList.add("slide");
-    
-    // Activa la primera imagen de entrada
-    if (index === 0) {
-      img.classList.add("active");
+    // Inyecta los elementos <img> en la estructura HTML
+    function updateDOMSlides() {
+      container.innerHTML = "";
+      
+      currentImageUrls.forEach((url, index) => {
+        const img = document.createElement("img");
+        img.src = url;
+        img.classList.add("slide");
+        
+        if (index === 0) {
+          img.classList.add("active");
+        }
+        
+        container.appendChild(img);
+      });
+
+      currentIndex = 0;
+      startImageLoop();
     }
-    
-    container.appendChild(img);
-  });
 
-  currentIndex = 0;
-  startImageLoop();
-}
+    // Bucle continuo de reproducción
+    function startImageLoop() {
+      if (loopInterval) clearInterval(loopInterval);
 
-// Bucle continuo de transición
-function startImageLoop() {
-  if (loopInterval) clearInterval(loopInterval);
+      loopInterval = setInterval(() => {
+        const slides = document.querySelectorAll(".slide");
+        if (slides.length <= 1) return;
 
-  loopInterval = setInterval(() => {
-    const slides = document.querySelectorAll(".slide");
-    if (slides.length <= 1) return; // No iterar si hay 1 o 0 imágenes
+        slides[currentIndex].classList.remove("active");
+        currentIndex = (currentIndex + 1) % slides.length;
+        slides[currentIndex].classList.add("active");
+      }, DURACION_IMAGEN_MS);
+    }
 
-    // Oculta la imagen actual
-    slides[currentIndex].classList.remove("active");
+    // Ejecución inicial
+    fetchImagesFromGitHub();
 
-    // Siguiente índice
-    currentIndex = (currentIndex + 1) % slides.length;
-
-    // Muestra la siguiente
-    slides[currentIndex].classList.add("active");
-  }, DURACION_IMAGEN_MS);
-}
-
-// Ejecución inicial
-fetchImagesFromGitHub();
-
-// Revisa cambios en GitHub en segundo plano periódicamente
-setInterval(fetchImagesFromGitHub, REFRESCAR_REPOS_MS);
+    // Verificación periódica en segundo plano
+    setInterval(fetchImagesFromGitHub, REFRESCAR_REPOS_MS);
+  </script>
+</body>
+</html>
