@@ -1,0 +1,97 @@
+// ==========================================
+// CONFIGURACIÓN - AJUSTA ESTOS CAMPOS
+// ==========================================
+const GITHUB_USER = "TU-USUARIO-DE-GITHUB"; 
+const GITHUB_REPO = "NOMBRE-DE-TU-REPOSiTORIO"; 
+const FOLDER_PATH = "imagenes"; 
+const DURACION_IMAGEN_MS = 7000; // Tiempo en pantalla (7 segundos)
+const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Revisa si hay fotos nuevas cada 5 min
+
+// ==========================================
+// LÓGICA DEL REPRODUCTOR
+// ==========================================
+const container = document.getElementById("slider-container");
+const statusBadge = document.getElementById("status-badge");
+
+let currentImageUrls = [];
+let currentIndex = 0;
+let loopInterval = null;
+
+// Obtiene la lista de imágenes desde GitHub
+async function fetchImagesFromGitHub() {
+  const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FOLDER_PATH}`;
+  
+  try {
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`Error de red: ${response.status}`);
+    }
+
+    const files = await response.json();
+    
+    // Filtra solo archivos con extensiones de imagen soportadas
+    const imageUrls = files
+      .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
+      .map(file => file.download_url);
+
+    statusBadge.classList.add("hidden");
+
+    if (imageUrls.length > 0) {
+      // Si la lista de imágenes cambió, actualizamos el slider
+      if (JSON.stringify(imageUrls) !== JSON.stringify(currentImageUrls)) {
+        currentImageUrls = imageUrls;
+        updateDOMSlides();
+      }
+    }
+  } catch (error) {
+    console.warn("No se pudo conectar a GitHub API (usando caché o sin conexión):", error);
+    statusBadge.classList.remove("hidden");
+  }
+}
+
+// Genera los elementos IMG en la página
+function updateDOMSlides() {
+  container.innerHTML = "";
+  
+  currentImageUrls.forEach((url, index) => {
+    const img = document.createElement("img");
+    img.src = url;
+    img.classList.add("slide");
+    
+    // Activa la primera imagen de entrada
+    if (index === 0) {
+      img.classList.add("active");
+    }
+    
+    container.appendChild(img);
+  });
+
+  currentIndex = 0;
+  startImageLoop();
+}
+
+// Bucle continuo de transición
+function startImageLoop() {
+  if (loopInterval) clearInterval(loopInterval);
+
+  loopInterval = setInterval(() => {
+    const slides = document.querySelectorAll(".slide");
+    if (slides.length <= 1) return; // No iterar si hay 1 o 0 imágenes
+
+    // Oculta la imagen actual
+    slides[currentIndex].classList.remove("active");
+
+    // Siguiente índice
+    currentIndex = (currentIndex + 1) % slides.length;
+
+    // Muestra la siguiente
+    slides[currentIndex].classList.add("active");
+  }, DURACION_IMAGEN_MS);
+}
+
+// Ejecución inicial
+fetchImagesFromGitHub();
+
+// Revisa cambios en GitHub en segundo plano periódicamente
+setInterval(fetchImagesFromGitHub, REFRESCAR_REPOS_MS);
