@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Administrativo Multi-TV - Portanko</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --accent: #d97706; --text: #f8fafc; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 24px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding-bottom: 16px; margin-bottom: 24px; }
+    .tv-selector { display: flex; gap: 12px; margin-bottom: 20px; }
+    .tv-btn { background: var(--card); border: 1px solid rgba(255,255,255,0.1); color: var(--text); padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+    .tv-btn.active { background: var(--accent); font-weight: bold; }
+    .section-card { background: var(--card); padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    .form-row { display: flex; gap: 16px; margin-bottom: 14px; align-items: center; }
+    label { font-size: 12px; text-transform: uppercase; color: #94a3b8; display: block; margin-bottom: 4px; }
+    input, select { background: #0f172a; border: 1px solid #334155; color: #fff; padding: 10px; border-radius: 4px; width: 100%; }
+    .btn-save { background: var(--accent); color: #fff; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2>PORTANKO - Control Central Multi-TV</h2>
+    <button onclick="logout()" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Cerrar Sesión</button>
+  </div>
+
+  <div class="tv-selector">
+    <button class="tv-btn active" onclick="selectTV('tv1')">TV 1 - Vidriera Principal</button>
+    <button class="tv-btn" onclick="selectTV('tv2')">TV 2 - Recepción Abogados</button>
+  </div>
+
+  <div class="section-card">
+    <h3 style="color: var(--accent); margin-bottom: 16px;">Configuración de Pantalla & Música de Fondo</h3>
+    <div class="form-row">
+      <div style="flex: 1;">
+        <label>Orientación de Pantalla</label>
+        <select id="orientationSelect">
+          <option value="0">Horizontal (0°)</option>
+          <option value="90">Vertical Derecha (90°)</option>
+          <option value="270" selected>Vertical Invertida (270°)</option>
+        </select>
+      </div>
+      <div style="flex: 1;">
+        <label>Música de Fondo</label>
+        <select id="audioEnabled">
+          <option value="true">Activado</option>
+          <option value="false">Silenciado</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div style="flex: 3;">
+        <label>URL del Archivo de Audio (MP3)</label>
+        <input type="text" id="audioUrl" placeholder="https://firebasestorage.googleapis.com/...">
+      </div>
+      <div style="flex: 1;">
+        <label>Volumen (0.0 a 1.0)</label>
+        <input type="number" id="audioVolume" step="0.1" min="0" max="1" value="0.5">
+      </div>
+    </div>
+    <button class="btn-save" onclick="saveTVConfig()">Guardar Configuración en Firestore</button>
+  </div>
+
+  <script>
+    if (!sessionStorage.getItem("portanko_auth")) window.location.href = "login.html";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhTFpjaWhAUnA3P5_pXGNgjAUlKEtDXAA",
+      authDomain: "losmayorgatv.firebaseapp.com",
+      databaseURL: "https://losmayorgatv-default-rtdb.firebaseio.com",
+      projectId: "losmayorgatv",
+      storageBucket: "losmayorgatv.firebasestorage.app",
+      messagingSenderId: "859965884915",
+      appId: "1:859965884915:web:558232228bf76b70e7ea86",
+      measurementId: "G-0RQ91ZPNWG"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let currentTV = "tv1";
+
+    function selectTV(tvId) {
+      currentTV = tvId;
+      document.querySelectorAll('.tv-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      loadTVConfig();
+    }
+
+    function loadTVConfig() {
+      db.collection('portanko_tvs').doc(currentTV).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById('orientationSelect').value = data.orientation || 270;
+          if (data.audioSettings) {
+            document.getElementById('audioEnabled').value = data.audioSettings.enabled ? "true" : "false";
+            document.getElementById('audioUrl').value = data.audioSettings.audioUrl || "";
+            document.getElementById('audioVolume').value = data.audioSettings.volume || 0.5;
+          }
+        }
+      });
+    }
+
+    function saveTVConfig() {
+      const orientation = parseInt(document.getElementById('orientationSelect').value);
+      const enabled = document.getElementById('audioEnabled').value === "true";
+      const audioUrl = document.getElementById('audioUrl').value;
+      const volume = parseFloat(document.getElementById('audioVolume').value);
+
+      db.collection('portanko_tvs').doc(currentTV).set({
+        orientation: orientation,
+        audioSettings: { enabled, audioUrl, volume }
+      }, { merge: true }).then(() => {
+        alert("Configuración de " + currentTV + " actualizada con éxito en Firestore.");
+      });
+    }
+
+    function logout() {
+      sessionStorage.removeItem("portanko_auth");
+      window.location.href = "login.html";
+    }
+
+    loadTVConfig();
+  </script>
+</body>
+</html>
