@@ -113,7 +113,6 @@
 
     .flaticon-copy-btn:hover { background: var(--cyan); color: #0f172a; }
 
-    /* Layout Principal Ampliado */
     .main-grid { display: grid; grid-template-columns: 1fr 600px; gap: 24px; }
     .section-card { background: var(--card); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
     .section-title { color: var(--accent); font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
@@ -124,6 +123,17 @@
 
     .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; }
     .btn-action:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+    /* Guía Canva Card Style */
+    .canva-guide-card {
+      background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(30, 41, 59, 1) 100%);
+      border: 1px solid var(--cyan);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    .canva-guide-card h4 { color: var(--cyan); font-size: 13px; margin-bottom: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+    .canva-guide-list { font-size: 12px; color: #cbd5e1; line-height: 1.6; }
 
     #copyToast {
       position: fixed;
@@ -148,11 +158,9 @@
 
     #copyToast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
-    /* Stage de Vista Previa Gigante */
     .preview-stage { width: 100%; height: 750px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
     .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 3px solid #475569; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px rgba(0,0,0,0.9); }
     
-    /* Dimensiones Escaladas Gigantes */
     .preview-screen.orient-0.size-32 { width: 440px; height: 247px; }
     .preview-screen.orient-0.size-40 { width: 480px; height: 270px; }
     .preview-screen.orient-0.size-43 { width: 520px; height: 292px; }
@@ -166,7 +174,6 @@
     .preview-screen.orient-90 { transform: rotate(90deg); }
     .preview-screen.orient-270 { transform: rotate(270deg); }
 
-    /* Modos de Relleno CSS (Cover / Contain) */
     .preview-screen img.bg-media, .preview-screen video.bg-media {
       max-width: 100%;
       max-height: 100%;
@@ -212,6 +219,19 @@
 
   <div class="main-grid">
     <div>
+      <!-- Guía Integrada de Medidas para Canva -->
+      <div class="canva-guide-card">
+        <h4>
+          <svg class="motion-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          <span>Guía de Dimensiones para Canva</span>
+        </h4>
+        <div class="canva-guide-list">
+          • <strong>TV Vertical (32", 40", 43", 50"):</strong> Crea en Canva con <code>1080 x 1920 px</code> (Plantilla <em>"Historia de Instagram"</em>).<br>
+          • <strong>TV Horizontal (32", 40", 43", 50"):</strong> Crea en Canva con <code>1920 x 1080 px</code> (Plantilla <em>"Presentación 16:9"</em>).<br>
+          • <strong>Diseños 4K Ultra HD:</strong> Usa <code>2160 x 3840 px</code> (Vertical) o <code>3840 x 2160 px</code> (Horizontal).
+        </div>
+      </div>
+
       <div class="section-card">
         <h3 class="section-title">
           <span>Ajustes de Pantalla & Música</span>
@@ -344,7 +364,6 @@
       </div>
     </div>
 
-    <!-- Vista Previa Ampliada con Simulación Realista -->
     <div>
       <div class="section-card" style="position: sticky; top: 24px;">
         <h3 class="section-title">
