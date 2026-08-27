@@ -173,8 +173,19 @@
     .pl-btn:disabled { opacity:0.35; cursor:default; }
     .pl-btn.edit { background:#991b1b; }
     .pl-btn.del { background:#ef4444; }
-    .pl-btn.toggle-on { background: var(--ok); color: #04140c; font-weight: 700; }
-    .pl-btn.toggle-off { background: transparent; border: 1px solid var(--border); color: var(--muted, #64748b); }
+
+    .audio-track-item { display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.7); padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); gap: 10px; }
+    .audio-play-btn { width: 32px; height: 32px; border-radius: 50%; border: none; background: #1e3a8a; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; transition: background 0.15s; }
+    .audio-play-btn:hover { background: #2563eb; }
+    .audio-play-btn.playing { background: var(--ok); color: #04140c; animation: audioPlayingPulse 1.4s ease-in-out infinite; }
+    @keyframes audioPlayingPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); } 50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } }
+    /* Switch deslizable de Activo/Inactivo por ítem */
+    .toggle-switch { position: relative; display: inline-flex; align-items: center; width: 42px; height: 23px; flex-shrink: 0; cursor: pointer; }
+    .toggle-track { position: absolute; inset: 0; background: rgba(100,116,139,0.35); border: 1px solid var(--border); border-radius: 999px; transition: background 0.25s ease, border-color 0.25s ease; }
+    .toggle-knob { position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; background: #cbd5e1; border-radius: 50%; transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), background 0.25s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+    .toggle-switch.is-on .toggle-track { background: var(--ok); border-color: var(--ok); }
+    .toggle-switch.is-on .toggle-knob { transform: translateX(19px); background: #04140c; }
+    .toggle-switch:hover .toggle-track { border-color: var(--cyan); }
     .playlist-item.item-inactive { opacity: 0.5; }
     .inactive-tag { color: #64748b; font-style: italic; }
 
@@ -189,6 +200,31 @@
 
     .preview-stage { width: 100%; height: 700px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); box-shadow: inset 0 0 20px rgba(0,0,0,0.9); }
     .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 3px solid #1e3a8a; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 35px rgba(30, 58, 138, 0.5); }
+
+    /* Mini vista previa de transición: mismas clases fx-* y mismos tiempos que
+       usa el reproductor real, para que lo que se ve acá sea 1:1 con la TV. */
+    .preview-stage-mini { position: relative; width: 100%; height: 150px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--border); margin-bottom: 14px; }
+    .preview-wrapper {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;
+      z-index: 1;
+    }
+    .preview-wrapper.active { z-index: 10 !important; }
+    .fx-fade { opacity: 0; transition: opacity 1.6s ease-in-out; }
+    .fx-fade.active { opacity: 1 !important; }
+    .fx-fadezoom { opacity: 0; transform: scale(1.045); transition: opacity 1.6s ease-in-out, transform 1.8s cubic-bezier(0.22,1,0.36,1); }
+    .fx-fadezoom.active { opacity: 1 !important; transform: scale(1) !important; }
+    .fx-slide-left { opacity: 1; transform: translateX(100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
+    .fx-slide-left.active { transform: translateX(0) !important; }
+    .fx-slide-right { opacity: 1; transform: translateX(-100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
+    .fx-slide-right.active { transform: translateX(0) !important; }
+    .fx-slide-up { opacity: 1; transform: translateY(100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
+    .fx-slide-up.active { transform: translateY(0) !important; }
+    .fx-zoom { opacity: 0; transform: scale(0.82); transition: opacity 0.9s ease-out, transform 0.9s cubic-bezier(0.34,1.56,0.64,1); }
+    .fx-zoom.active { opacity: 1 !important; transform: scale(1) !important; }
+    .fx-none { opacity: 0; transition: opacity 0.05s linear; }
+    .fx-none.active { opacity: 1 !important; }
+
     .preview-screen.orient-0.size-32 { width: 420px; height: 236px; }
     .preview-screen.orient-0.size-40 { width: 460px; height: 259px; }
     .preview-screen.orient-0.size-43 { width: 500px; height: 281px; }
@@ -336,6 +372,47 @@
           </div>
         </div>
         <button class="btn-action" onclick="requestSaveTVConfig()">Guardar Ajustes de esta TV</button>
+      </div>
+
+      <div class="section-card">
+        <h3 class="section-title">
+          <span>Música de Fondo — Nube Interna</span>
+          <small style="font-size:11px; color:#38bdf8;" id="audioRepoCounter">0 pistas</small>
+        </h3>
+        <p class="section-subtitle">Subí un MP3 una sola vez y reutilizalo en cualquier TV. Tocá ▶ para escucharlo antes de asignarlo.</p>
+        <div class="form-row">
+          <div style="flex: 2;">
+            <label>Título</label>
+            <input type="text" id="audioTrackTitle" placeholder="Ej: Instrumental Recepción">
+          </div>
+          <div style="flex: 1;">
+            <label>Archivo MP3</label>
+            <input type="file" id="audioTrackFileInput" accept="audio/mpeg,audio/mp3,audio/*">
+          </div>
+        </div>
+        <button class="btn-action blue" onclick="uploadAudioTrack()" id="uploadAudioBtn">Subir Música</button>
+        <div id="audioTrackList" style="margin-top:14px;"><p style="color:#93c5fd; font-size:12px;">Cargando pistas...</p></div>
+      </div>
+
+      <div class="section-card">
+        <h3 class="section-title"><span>Transición entre Contenidos — TV activa</span></h3>
+        <p class="section-subtitle">Se aplica por igual a imágenes y videos. Cambiá el efecto para ver la vista previa en vivo.</p>
+        <div class="form-row">
+          <div style="flex:1;">
+            <label>Efecto</label>
+            <select id="transitionEffectSelect" onchange="startTransitionPreview()">
+              <option value="fade">Desvanecimiento (Fade)</option>
+              <option value="fadezoom">Desvanecimiento + Acercamiento</option>
+              <option value="slide-left">Deslizar desde la derecha</option>
+              <option value="slide-right">Deslizar desde la izquierda</option>
+              <option value="slide-up">Deslizar desde abajo</option>
+              <option value="zoom">Aparecer con Zoom</option>
+              <option value="none">Sin transición (corte directo)</option>
+            </select>
+          </div>
+        </div>
+        <div class="preview-stage-mini" id="transitionPreviewStage"></div>
+        <button class="btn-action" onclick="requestSaveTransitionEffect()">Guardar Efecto de Transición</button>
       </div>
 
       <div class="section-card">
@@ -490,6 +567,55 @@
       { id: 'viernes', label: 'Viernes' }, { id: 'sabado', label: 'Sábado' },
       { id: 'domingo', label: 'Domingo' }
     ];
+
+    /* Misma tabla (mismos nombres y tiempos) que usa el reproductor real —
+     * así la vista previa acá refleja exactamente lo que se va a ver en la TV. */
+    const TRANSITION_EFFECTS = {
+      fade:          { cls: 'fx-fade',       duration: 1600 },
+      fadezoom:      { cls: 'fx-fadezoom',   duration: 1800 },
+      'slide-left':  { cls: 'fx-slide-left', duration: 1000 },
+      'slide-right': { cls: 'fx-slide-right',duration: 1000 },
+      'slide-up':    { cls: 'fx-slide-up',   duration: 1000 },
+      zoom:          { cls: 'fx-zoom',       duration: 900  },
+      none:          { cls: 'fx-none',       duration: 80   }
+    };
+    const DEFAULT_TRANSITION = 'fade';
+    const PREVIEW_PLACEHOLDERS = [
+      { bg: 'linear-gradient(135deg,#1e3a8a,#0c1120)', label: 'Contenido A' },
+      { bg: 'linear-gradient(135deg,#7f1d1d,#0c1120)', label: 'Contenido B' }
+    ];
+    let previewTimer = null;
+    let previewIndex = 0;
+
+    /** Arranca (o reinicia) el loop de vista previa con el efecto actualmente
+     * seleccionado en el <select>. Se llama al cambiar de efecto y al abrir
+     * cada TV, para que la vista previa siempre refleje lo que está elegido. */
+    function startTransitionPreview() {
+      if (previewTimer) clearInterval(previewTimer);
+      previewIndex = 0;
+      renderPreviewSlide();
+      previewTimer = setInterval(renderPreviewSlide, 2400);
+    }
+
+    function renderPreviewSlide() {
+      const stage = document.getElementById('transitionPreviewStage');
+      const select = document.getElementById('transitionEffectSelect');
+      if (!stage || !select) return;
+      const effect = TRANSITION_EFFECTS[select.value] || TRANSITION_EFFECTS[DEFAULT_TRANSITION];
+      const prev = stage.querySelector('.preview-wrapper.active');
+      const item = PREVIEW_PLACEHOLDERS[previewIndex % PREVIEW_PLACEHOLDERS.length];
+      previewIndex++;
+
+      const wrapper = document.createElement('div');
+      wrapper.className = `preview-wrapper ${effect.cls}`;
+      wrapper.style.background = item.bg;
+      wrapper.textContent = item.label;
+      stage.appendChild(wrapper);
+      requestAnimationFrame(() => {
+        wrapper.classList.add('active');
+        setTimeout(() => { if (prev) prev.remove(); }, effect.duration);
+      });
+    }
 
     let currentTV = "tv1";
     let currentDay = "lunes";
@@ -1036,6 +1162,7 @@
     }
 
     function selectTV(tvId) {
+      stopAudioPreview(); // no dejar sonando una vista previa al cambiar de pantalla
       currentTV = tvId;
       renderTVBar();   // resalta en rojo la TV recién elegida de inmediato
       loadTVConfig();  // y recién después trae su configuración/programación
@@ -1058,14 +1185,174 @@
         document.getElementById('audioVolume').value = tvData.audioSettings.volume ?? 0.5;
         document.getElementById('legalBannerText').value = tvData.legalBanner.text || "";
         document.getElementById('showLegalBanner').value = tvData.legalBanner.show === false ? "false" : "true";
+        document.getElementById('transitionEffectSelect').value = TRANSITION_EFFECTS[tvData.transitionEffect] ? tvData.transitionEffect : DEFAULT_TRANSITION;
 
         updatePreviewOrientation();
         updateBannerPreview();
+        startTransitionPreview();
         renderDaysBar();
         renderDaySchedule();
         renderWeekDashboard();
         ensureScheduleVideoDurations(); // completa duraciones de video faltantes en segundo plano
       }, err => { console.error(err); showToast('Error cargando la configuración de la TV.', true); });
+    }
+
+    /* =========================================================
+       NUBE INTERNA DE MÚSICA (colección aparte: el audio es un ajuste por
+       TV, no algo que se programa día a día como imágenes/videos)
+       ========================================================= */
+    let audioRepository = [];
+    let currentlyPlayingAudioEl = null;
+    let currentlyPlayingBtn = null;
+
+    function listenGlobalAudioRepository() {
+      db.collection('portanko_audio').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        audioRepository = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderAudioRepository();
+      }, err => { console.error(err); showToast('No se pudo cargar la música interna.', true); });
+    }
+
+    function renderAudioRepository() {
+      const counter = document.getElementById('audioRepoCounter');
+      const list = document.getElementById('audioTrackList');
+      if (counter) counter.innerText = `${audioRepository.length} pista(s)`;
+      if (!list) return;
+
+      if (audioRepository.length === 0) {
+        list.innerHTML = '<p style="color:#93c5fd; font-size:12px;">Todavía no subiste ninguna música.</p>';
+        return;
+      }
+      list.innerHTML = '';
+      audioRepository.forEach(track => {
+        const row = document.createElement('div');
+        row.className = 'audio-track-item';
+        row.innerHTML = `
+          <button class="audio-play-btn" title="Escuchar / pausar">▶</button>
+          <div style="flex:1; min-width:0;">
+            <strong style="font-size:12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(track.title || 'Sin título')}</strong>
+          </div>
+          <button class="pl-btn" title="Usar como música de fondo de la TV activa">Usar en esta TV</button>
+          <button class="pl-btn del" title="Eliminar de la nube">X</button>
+        `;
+        const [playBtn, useBtn, delBtn] = row.querySelectorAll('button');
+        playBtn.onclick = () => toggleAudioPreview(track.id, playBtn);
+        useBtn.onclick = () => useAudioTrack(track.id);
+        delBtn.onclick = () => requestDeleteAudioTrack(track.id);
+        list.appendChild(row);
+      });
+    }
+
+    /** Reproduce/pausa una vista previa del track. Si había otra sonando, la corta primero. */
+    function toggleAudioPreview(trackId, btnEl) {
+      const track = audioRepository.find(t => t.id === trackId);
+      if (!track) return;
+
+      if (currentlyPlayingAudioEl && currentlyPlayingBtn === btnEl && !currentlyPlayingAudioEl.paused) {
+        stopAudioPreview();
+        return;
+      }
+      stopAudioPreview(); // corta cualquier otra vista previa que estuviera sonando
+
+      const audio = new Audio(track.url);
+      audio.play().catch(() => showToast('No se pudo reproducir la vista previa.', true));
+      audio.onended = () => stopAudioPreview();
+      currentlyPlayingAudioEl = audio;
+      currentlyPlayingBtn = btnEl;
+      btnEl.textContent = '⏸';
+      btnEl.classList.add('playing');
+    }
+
+    function stopAudioPreview() {
+      if (currentlyPlayingAudioEl) { try { currentlyPlayingAudioEl.pause(); } catch (e) {} }
+      if (currentlyPlayingBtn) { currentlyPlayingBtn.textContent = '▶'; currentlyPlayingBtn.classList.remove('playing'); }
+      currentlyPlayingAudioEl = null;
+      currentlyPlayingBtn = null;
+    }
+
+    /** Copia la URL del track elegido al campo de música de fondo de la TV
+     * activa. Todavía hace falta tocar "Guardar Ajustes de esta TV" para
+     * que quede aplicado — mismo patrón que el resto del panel. */
+    function useAudioTrack(trackId) {
+      const track = audioRepository.find(t => t.id === trackId);
+      if (!track) return;
+      document.getElementById('audioUrl').value = track.url;
+      document.getElementById('audioEnabled').value = 'true';
+      showToast(`"${track.title}" seleccionada. No olvides tocar "Guardar Ajustes de esta TV".`);
+    }
+
+    async function uploadAudioTrack() {
+      const fileInput = document.getElementById('audioTrackFileInput');
+      const file = fileInput.files[0];
+      if (!file) return showToast('Seleccioná un archivo de audio primero.', true);
+      if (!file.type.startsWith('audio/')) return showToast('El archivo tiene que ser de audio (MP3).', true);
+
+      const loader = document.getElementById('uploadLoader');
+      const btn = document.getElementById('uploadAudioBtn');
+      document.getElementById('uploadLoaderText').innerText = 'Subiendo música al repositorio...';
+      loader.classList.add('active');
+      btn.disabled = true;
+
+      try {
+        const storagePath = `portanko/audio/${Date.now()}_${file.name}`;
+        const storageRef = storage.ref(storagePath);
+        const snapshot = await storageRef.put(file);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+
+        await db.collection('portanko_audio').add({
+          title: document.getElementById('audioTrackTitle').value || file.name,
+          url: downloadURL,
+          storagePath,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        fileInput.value = '';
+        document.getElementById('audioTrackTitle').value = '';
+        showToast('Música subida a la nube interna.');
+      } catch (err) {
+        console.error(err);
+        showToast('Error al subir la música.', true);
+      } finally {
+        loader.classList.remove('active');
+        btn.disabled = false;
+      }
+    }
+
+    /** Revisa en todas las TVs si alguna tiene esta pista configurada como
+     * música de fondo, para avisar antes de borrarla del todo. */
+    async function findAudioUsage(url) {
+      const usedIn = [];
+      try {
+        const snap = await db.collection('portanko_tvs').get();
+        snap.forEach(doc => {
+          const data = doc.data();
+          if (data.audioSettings && data.audioSettings.audioUrl === url) usedIn.push(data.name || doc.id);
+        });
+      } catch (e) { console.warn('No se pudo verificar en qué TVs está en uso la música:', e); }
+      return usedIn;
+    }
+
+    async function requestDeleteAudioTrack(trackId) {
+      const track = audioRepository.find(t => t.id === trackId);
+      if (!track) return;
+      const usedIn = await findAudioUsage(track.url);
+
+      if (usedIn.length > 0) {
+        showConfirmModal('MÚSICA EN USO', `Esta pista está configurada como música de fondo en: ${usedIn.join(', ')}. Si la borrás, esas TVs se quedan sin audio la próxima vez que actualicen su configuración. ¿Eliminarla igual?`, () => doDeleteAudioTrack(track), true);
+        return;
+      }
+      showConfirmModal('ELIMINAR MÚSICA', `¿Eliminar "${track.title || 'esta pista'}" de la nube interna?`, () => doDeleteAudioTrack(track), true);
+    }
+
+    async function doDeleteAudioTrack(track) {
+      if (currentlyPlayingBtn) stopAudioPreview();
+      try {
+        await db.collection('portanko_audio').doc(track.id).delete();
+        if (track.storagePath) { try { await storage.ref(track.storagePath).delete(); } catch (e) { /* no crítico */ } }
+        showToast('Música eliminada de la nube interna.');
+      } catch (err) {
+        console.error(err);
+        showToast('No se pudo eliminar la música.', true);
+      }
     }
 
     /* =========================================================
@@ -1335,8 +1622,11 @@
               <small style="color:#93c5fd;">${item.type === 'video' ? 'Video MP4' : (item.duration || 7) + 's'} | Girado: ${item.rotation || 0}° | ${item.fit || 'cover'}${item.badgeText ? ' | ' + escapeHtml(item.badgeText) : ''}${!isActive ? ' <span class="inactive-tag">· desactivado, no se muestra en la TV</span>' : ''}</small>
             </div>
           </div>
-          <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
-            <button class="pl-btn ${isActive ? 'toggle-on' : 'toggle-off'}" onclick="toggleItemActive(${index})" title="${isActive ? 'Click para desactivar (dejar de mostrar)' : 'Click para activar (volver a mostrar)'}">${isActive ? 'Activo' : 'Inactivo'}</button>
+          <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <div class="toggle-switch ${isActive ? 'is-on' : ''}" onclick="toggleItemActive(${index})" title="${isActive ? 'Click para desactivar (dejar de mostrar)' : 'Click para activar (volver a mostrar)'}">
+              <span class="toggle-track"></span>
+              <span class="toggle-knob"></span>
+            </div>
             <button class="pl-btn" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Subir orden">↑</button>
             <button class="pl-btn" onclick="moveItem(${index}, 1)" ${index === dayList.length - 1 ? 'disabled' : ''} title="Bajar orden">↓</button>
             <button class="pl-btn edit" onclick="openEditItemModal(${index})">Editar</button>
@@ -1567,6 +1857,19 @@
       });
     }
 
+    function requestSaveTransitionEffect() {
+      const effect = document.getElementById('transitionEffectSelect').value;
+      showConfirmModal('GUARDAR TRANSICIÓN', `¿Aplicar este efecto de transición a ${currentTV}?`, async () => {
+        try {
+          await db.collection('portanko_tvs').doc(currentTV).set({ transitionEffect: effect }, { merge: true });
+          showToast('Efecto de transición guardado.');
+        } catch (e) {
+          console.error(e);
+          showToast('No se pudo guardar el efecto.', true);
+        }
+      });
+    }
+
     /** Trae la palabra clave global vigente y la muestra en el campo correspondiente. */
     async function loadAccessKeyword() {
       const input = document.getElementById('accessKeywordInput');
@@ -1616,6 +1919,7 @@
       renderDaysBar();
       listenAllTVs();
       listenGlobalRepository();
+      listenGlobalAudioRepository();
       loadTVConfig();
       loadAccessKeyword();
       // Refresca los puntos de estado ("hace X min") aunque no llegue data nueva de Firestore.
