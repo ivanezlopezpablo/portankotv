@@ -2,145 +2,109 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acceso Central - Portanko Abogados e Inmobiliaria</title>
+  <title>Acceso Administrador - Portanko</title>
   <style>
-    :root {
-      --primary: #0f172a;
-      --accent: #d97706;
-      --bg-glass: rgba(15, 23, 42, 0.85);
-      --border-glass: rgba(217, 119, 6, 0.35);
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', -apple-system, sans-serif; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background-color: #020617;
-      color: var(--text);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #020617 0%, #1e1b4b 50%, #450a0a 100%);
+      background-size: 400% 400%;
+      animation: dynamicBackground 15s ease infinite;
       height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
-      position: relative;
+      color: #f8fafc;
     }
 
-    #canvas-bg {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 1;
+    @keyframes dynamicBackground {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
     }
 
     .login-card {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      max-width: 440px;
-      padding: 44px;
-      background: var(--bg-glass);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--border-glass);
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #1e3a8a;
+      padding: 36px;
       border-radius: 12px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-    }
-
-    .brand-header {
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+      backdrop-filter: blur(12px);
       text-align: center;
-      margin-bottom: 32px;
     }
 
-    .brand-header h1 {
-      font-size: 26px;
-      letter-spacing: 4px;
-      color: #fff;
+    .login-title {
+      color: #fca5a5;
+      font-size: 22px;
+      font-weight: bold;
       text-transform: uppercase;
-      font-weight: 700;
-    }
-
-    .brand-header span {
-      font-size: 11px;
       letter-spacing: 2px;
-      color: var(--accent);
-      text-transform: uppercase;
-      display: block;
-      margin-top: 6px;
+      margin-bottom: 8px;
     }
 
-    .form-group {
-      margin-bottom: 20px;
-      position: relative;
-    }
-
-    .form-group label {
-      display: block;
+    .login-subtitle {
+      color: #93c5fd;
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      color: var(--text-muted);
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    label {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #93c5fd;
+      display: block;
       margin-bottom: 6px;
     }
 
-    .input-wrapper {
-      position: relative;
-    }
-
-    .input-wrapper input {
+    input {
       width: 100%;
-      padding: 12px 40px 12px 14px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 6px;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid #1e3a8a;
       color: #fff;
+      padding: 12px;
+      border-radius: 6px;
       font-size: 14px;
+    }
+
+    input:focus {
       outline: none;
-      transition: all 0.3s ease;
+      border-color: #991b1b;
+      box-shadow: 0 0 10px rgba(153, 27, 27, 0.6);
     }
 
-    .input-wrapper input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 12px rgba(217, 119, 6, 0.4);
-    }
-
-    .toggle-eye {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
-      width: 20px;
-      height: 20px;
-      fill: var(--text-muted);
-      transition: fill 0.3s;
-    }
-
-    .toggle-eye:hover { fill: var(--accent); }
-
-    .btn-submit {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-      border: none;
-      border-radius: 6px;
+    .btn-login {
+      background: #991b1b;
       color: #fff;
+      border: none;
+      padding: 12px;
+      border-radius: 6px;
       font-weight: bold;
-      letter-spacing: 2px;
+      width: 100%;
       text-transform: uppercase;
       cursor: pointer;
       margin-top: 10px;
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(153, 27, 27, 0.5);
     }
 
-    .btn-submit:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(217, 119, 6, 0.4);
+    .btn-login:hover {
+      background: #7f1d1d;
+      transform: translateY(-1px);
     }
 
-    .error-msg {
+    #errorMsg {
       color: #ef4444;
       font-size: 12px;
-      text-align: center;
       margin-top: 14px;
       display: none;
     }
@@ -148,113 +112,34 @@
 </head>
 <body>
 
-  <canvas id="canvas-bg"></canvas>
-
   <div class="login-card">
-    <div class="brand-header">
-      <h1>PORTANKO</h1>
-      <span>Abogados e Inmobiliaria</span>
+    <div class="login-title">Portanko TV</div>
+    <div class="login-subtitle">Panel de Control Centralizado</div>
+    
+    <div class="form-group">
+      <label>Contraseña de Acceso</label>
+      <input type="password" id="passwordInput" placeholder="Ingrese clave..." onkeypress="handleKeyPress(event)">
     </div>
-
-    <form id="loginForm">
-      <div class="form-group">
-        <label>Usuario Administrador</label>
-        <div class="input-wrapper">
-          <input type="text" id="username" placeholder="admin.portanko" required>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Contraseña de Acceso</label>
-        <div class="input-wrapper">
-          <input type="password" id="password" placeholder="••••••••" required>
-          <svg class="toggle-eye" onclick="toggleVisibility('password', this)" viewBox="0 0 24 24">
-            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Palabra Clave (Master Key)</label>
-        <div class="input-wrapper">
-          <input type="password" id="masterkey" placeholder="••••••••" required>
-          <svg class="toggle-eye" onclick="toggleVisibility('masterkey', this)" viewBox="0 0 24 24">
-            <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
-          </svg>
-        </div>
-      </div>
-
-      <button type="submit" class="btn-submit">Ingresar al Panel</button>
-      <div id="errorMsg" class="error-msg">Credenciales o Palabra Clave incorrectas.</div>
-    </form>
+    
+    <button class="btn-login" onclick="attemptLogin()">Ingresar al Sistema</button>
+    <div id="errorMsg">Contraseña incorrecta. Intente nuevamente.</div>
   </div>
 
   <script>
-    function toggleVisibility(inputId, eyeIcon) {
-      const input = document.getElementById(inputId);
-      if (input.type === "password") {
-        input.type = "text";
-        eyeIcon.style.fill = "#d97706";
-      } else {
-        input.type = "password";
-        eyeIcon.style.fill = "#94a3b8";
-      }
-    }
-
-    document.getElementById("loginForm").addEventListener("submit", function(e) {
-      e.preventDefault();
-      const u = document.getElementById("username").value;
-      const p = document.getElementById("password").value;
-      const m = document.getElementById("masterkey").value;
-
-      if (u === "admin.portanko" && p === "Portanko2026!" && m === "PORTANKO-MASTER") {
+    function attemptLogin() {
+      const pass = document.getElementById("passwordInput").value;
+      // Contraseña por defecto para Portanko (puedes cambiarla aquí si lo deseas)
+      if (pass === "portanko2026") {
         sessionStorage.setItem("portanko_auth", "true");
         window.location.href = "admin.html";
       } else {
         document.getElementById("errorMsg").style.display = "block";
       }
-    });
-
-    const canvas = document.getElementById('canvas-bg');
-    const ctx = canvas.getContext('2d');
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
-
-    const points = Array.from({ length: 40 }, () => ({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: (Math.random() - 0.5) * 0.3
-    }));
-
-    function animate() {
-      ctx.clearRect(0, 0, width, height);
-      ctx.fillStyle = 'rgba(217, 119, 6, 0.35)';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-
-      points.forEach((p, i) => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        for (let j = i + 1; j < points.length; j++) {
-          const p2 = points[j];
-          const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
-          }
-        }
-      });
-      requestAnimationFrame(animate);
     }
-    animate();
+
+    function handleKeyPress(e) {
+      if (e.key === "Enter") attemptLogin();
+    }
   </script>
 </body>
 </html>
