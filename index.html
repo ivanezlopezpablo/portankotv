@@ -18,7 +18,6 @@
       font-family: 'Segoe UI', -apple-system, sans-serif;
     }
 
-    /* Pantalla Carga / Loader Institucional */
     #loader-screen {
       position: fixed;
       top: 0; left: 0;
@@ -32,28 +31,11 @@
       transition: opacity 0.8s ease, visibility 0.8s;
     }
 
-    .brand-loader h1 {
-      color: #ffffff;
-      font-size: 28px;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    .brand-loader span {
-      color: #d97706;
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      display: block;
-      text-align: center;
-      margin-top: 4px;
-    }
+    .brand-loader h1 { color: #ffffff; font-size: 28px; letter-spacing: 4px; text-transform: uppercase; font-weight: 700; text-align: center; }
+    .brand-loader span { color: #d97706; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; text-align: center; margin-top: 4px; }
 
     .spinner {
-      width: 40px;
-      height: 40px;
+      width: 40px; height: 40px;
       border: 3px solid rgba(217, 119, 6, 0.2);
       border-top: 3px solid #d97706;
       border-radius: 50%;
@@ -66,7 +48,6 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* Contenedor Responsive con Soporte de Rotación */
     #slider-container {
       position: absolute;
       top: 50%; left: 50%;
@@ -77,22 +58,10 @@
       transition: transform 0.5s ease-in-out;
     }
 
-    #slider-container.orientation-270 {
-      width: 100vh; height: 100vw;
-      transform: translate(-50%, -50%) rotate(270deg);
-    }
+    #slider-container.orientation-270 { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(270deg); }
+    #slider-container.orientation-90 { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); }
+    #slider-container.orientation-0 { width: 100vw; height: 100vh; transform: translate(-50%, -50%) rotate(0deg); }
 
-    #slider-container.orientation-90 {
-      width: 100vh; height: 100vw;
-      transform: translate(-50%, -50%) rotate(90deg);
-    }
-
-    #slider-container.orientation-0 {
-      width: 100vw; height: 100vh;
-      transform: translate(-50%, -50%) rotate(0deg);
-    }
-
-    /* Diapositivas multimedia */
     .slide-media {
       position: absolute;
       top: 0; left: 0;
@@ -100,18 +69,15 @@
       object-fit: cover;
       opacity: 0;
       z-index: 1;
-      transform: scale(1);
-      transition: opacity 1.5s ease-in-out, transform 7s ease-out;
+      transition: opacity 1.5s ease-in-out;
       will-change: opacity, transform;
     }
 
     .slide-media.active {
       opacity: 1 !important;
       z-index: 10 !important;
-      transform: scale(1.04);
     }
 
-    /* Banner Legal Ticker */
     #legal-banner {
       position: absolute;
       bottom: 0; left: 0; width: 100%;
@@ -126,7 +92,6 @@
       backdrop-filter: blur(8px);
     }
 
-    /* Indicador Offline */
     #status-badge {
       position: absolute;
       top: 20px; right: 20px;
@@ -145,7 +110,6 @@
 </head>
 <body>
 
-  <!-- Loader de Inicio -->
   <div id="loader-screen">
     <div class="brand-loader">
       <h1>PORTANKO</h1>
@@ -190,9 +154,7 @@
     const db = firebase.firestore();
 
     function hideLoader() {
-      if (loaderScreen) {
-        loaderScreen.classList.add("hidden");
-      }
+      if (loaderScreen) loaderScreen.classList.add("hidden");
     }
 
     function updateBackgroundAudio(audioSettings) {
@@ -225,7 +187,6 @@
       db.collection("portanko_tvs").doc(TV_ID).onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
-          
           applyOrientation(data.orientation || 270);
           updateBackgroundAudio(data.audioSettings);
 
@@ -245,7 +206,7 @@
           hideLoader();
         }
       }, err => {
-        console.warn("Firestore error:", err);
+        console.warn(err);
         statusBadge.classList.remove("hidden");
         hideLoader();
       });
@@ -262,11 +223,13 @@
 
       const item = playlist[currentIndex];
       const prevElement = container.querySelector(".slide-media.active");
+      const rot = item.rotation || 0;
 
       if (item.type === 'video') {
         const video = document.createElement('video');
         video.src = item.url;
         video.className = 'slide-media';
+        video.style.transform = `rotate(${rot}deg)`;
         video.autoplay = true;
         video.muted = true;
         video.playsInline = true;
@@ -287,6 +250,7 @@
         const img = document.createElement('img');
         img.src = item.url;
         img.className = 'slide-media';
+        img.style.transform = `rotate(${rot}deg)`;
 
         img.onload = () => {
           container.appendChild(img);
