@@ -22,9 +22,6 @@
 
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding-bottom: 16px; margin-bottom: 24px; }
     
-    /* =========================================================
-       MOTION GRAPHICS CSS & ANIMACIONES VECTORIALES
-       ========================================================= */
     .motion-icon {
       width: 20px;
       height: 20px;
@@ -38,25 +35,16 @@
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    /* Gear Rotate Motion */
-    .motion-gear {
-      animation: rotateMotion 12s linear infinite;
-    }
-    @keyframes rotateMotion {
-      100% { transform: rotate(360deg); }
-    }
+    .motion-gear { animation: rotateMotion 12s linear infinite; }
+    @keyframes rotateMotion { 100% { transform: rotate(360deg); } }
 
-    /* Copy Icon Motion (Bounce & Pulse) */
-    .flaticon-copy-btn:hover .motion-copy {
-      animation: copyPulse 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
+    .flaticon-copy-btn:hover .motion-copy { animation: copyPulse 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
     @keyframes copyPulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.3) rotate(-10deg); stroke: #10b981; }
       100% { transform: scale(1); }
     }
 
-    /* Info Motion Signal Glow */
     .info-btn-motion {
       display: inline-flex;
       align-items: center;
@@ -73,26 +61,8 @@
       transition: all 0.3s ease;
     }
 
-    .info-btn-motion::before {
-      content: '';
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, rgba(56,189,248,0.4) 0%, transparent 70%);
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
+    .info-btn-motion:hover { transform: scale(1.15) rotate(15deg); box-shadow: 0 0 12px var(--cyan); }
 
-    .info-btn-motion:hover {
-      transform: scale(1.15) rotate(15deg);
-      box-shadow: 0 0 12px var(--cyan);
-    }
-
-    .info-btn-motion:hover::before {
-      opacity: 1;
-    }
-
-    /* Plus TV Motion Add */
     .btn-add-tv {
       background: #10b981;
       color: #fff;
@@ -107,17 +77,9 @@
       gap: 8px;
     }
 
-    .btn-add-tv:hover {
-      background: #059669;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
-    }
+    .btn-add-tv:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); }
+    .btn-add-tv:hover .motion-plus { transform: rotate(90deg) scale(1.2); }
 
-    .btn-add-tv:hover .motion-plus {
-      transform: rotate(90deg) scale(1.2);
-    }
-
-    /* Motion TV Wrapper */
     .tv-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
     
     .tv-btn-wrapper {
@@ -131,29 +93,10 @@
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .tv-btn-wrapper:hover {
-      border-color: var(--accent);
-      transform: translateY(-3px);
-      box-shadow: 0 12px 20px -3px rgba(217, 119, 6, 0.3);
-    }
+    .tv-btn-wrapper:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 20px -3px rgba(217, 119, 6, 0.3); }
+    .tv-btn-wrapper.active { border-color: #f59e0b; box-shadow: 0 0 20px rgba(217, 119, 6, 0.6); background: linear-gradient(135deg, #d97706 0%, #b45309 100%); }
 
-    .tv-btn-wrapper.active {
-      border-color: #f59e0b;
-      box-shadow: 0 0 20px rgba(217, 119, 6, 0.6);
-      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-    }
-
-    .tv-btn { 
-      background: transparent; 
-      border: none; 
-      color: var(--text); 
-      padding: 10px 14px; 
-      cursor: pointer; 
-      font-weight: 600; 
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .tv-btn { background: transparent; border: none; color: var(--text); padding: 10px 14px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 
     .flaticon-copy-btn {
       background: rgba(15, 23, 42, 0.6);
@@ -168,13 +111,10 @@
       justify-content: center;
     }
 
-    .flaticon-copy-btn:hover {
-      background: var(--cyan);
-      color: #0f172a;
-    }
+    .flaticon-copy-btn:hover { background: var(--cyan); color: #0f172a; }
 
-    /* General Styling Layout */
-    .main-grid { display: grid; grid-template-columns: 1fr 440px; gap: 24px; }
+    /* Layout Ajustado con Mayor Espacio para Vista Previa */
+    .main-grid { display: grid; grid-template-columns: 1fr 520px; gap: 24px; }
     .section-card { background: var(--card); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
     .section-title { color: var(--accent); font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 
@@ -185,7 +125,6 @@
     .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; }
     .btn-action:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
-    /* Toast Notification */
     #copyToast {
       position: fixed;
       bottom: 20px;
@@ -209,32 +148,43 @@
 
     #copyToast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
-    /* Stage Preview */
-    .preview-stage { width: 100%; height: 540px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
-    .preview-screen { background: #111; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 2px solid #475569; display: flex; justify-content: center; align-items: center; }
+    /* Contenedor y TV Simulada Ampliados */
+    .preview-stage { width: 100%; height: 620px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
+    .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 2px solid #475569; display: flex; justify-content: center; align-items: center; }
     
-    .preview-screen.orient-0.size-32 { width: 280px; height: 157px; }
-    .preview-screen.orient-0.size-40 { width: 320px; height: 180px; }
-    .preview-screen.orient-0.size-43 { width: 340px; height: 191px; }
-    .preview-screen.orient-0.size-50 { width: 380px; height: 213px; }
+    /* Dimensiones Escaladas para Proyectar Mejor el Contenido */
+    .preview-screen.orient-0.size-32 { width: 360px; height: 202px; }
+    .preview-screen.orient-0.size-40 { width: 400px; height: 225px; }
+    .preview-screen.orient-0.size-43 { width: 440px; height: 247px; }
+    .preview-screen.orient-0.size-50 { width: 480px; height: 270px; }
 
-    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 230px; height: 129px; }
-    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 270px; height: 151px; }
-    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 290px; height: 163px; }
-    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 330px; height: 185px; }
+    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 280px; height: 157px; }
+    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 330px; height: 185px; }
+    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 370px; height: 208px; }
+    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 410px; height: 230px; }
 
     .preview-screen.orient-90 { transform: rotate(90deg); }
     .preview-screen.orient-270 { transform: rotate(270deg); }
 
-    .preview-screen img.bg-media, .preview-screen video.bg-media { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: transform 0.3s ease; }
+    /* Renderizado sin recortes (contain) */
+    .preview-screen img.bg-media, .preview-screen video.bg-media {
+      max-width: 100%;
+      max-height: 100%;
+      width: 100%;
+      height: 100%;
+      object-fit: contain !important;
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      margin: auto;
+      transition: transform 0.3s ease;
+    }
 
     .draggable-badge { position: absolute; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
-    .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: #fff; font-size: 8px; padding: 4px; text-align: center; z-index: 15; }
+    .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.85); color: #fff; font-size: 9px; padding: 6px; text-align: center; z-index: 15; }
 
     .playlist-item { display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
     .playlist-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
 
-    /* Modal Overlay */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
     .modal-card { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; width: 100%; max-width: 460px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); transform: translateY(-20px); transition: transform 0.25s ease; }
@@ -254,14 +204,12 @@
     <button onclick="logout()" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Cerrar Sesión</button>
   </div>
 
-  <!-- Botonera Interactiva con Motion Graphics Vectoriales -->
   <div class="tv-bar" id="tvContainer">
     <span style="color:#94a3b8; font-size:13px;">Cargando pantallas...</span>
   </div>
 
   <div class="main-grid">
     <div>
-      <!-- Ajustes de Pantalla & Música -->
       <div class="section-card">
         <h3 class="section-title">
           <span>Ajustes de Pantalla & Música</span>
@@ -318,7 +266,6 @@
         <button class="btn-action" onclick="requestSaveTVConfig()">Guardar Ajustes de TV</button>
       </div>
 
-      <!-- Carga Multimedia con Rotación Individual -->
       <div class="section-card">
         <h3 class="section-title">
           <span>Subir Nuevo Contenido (Imagen / Video)</span>
@@ -369,7 +316,6 @@
         <button class="btn-action" style="background:#2563eb;" onclick="uploadMedia()">Subir e Integrar a esta TV</button>
       </div>
 
-      <!-- Banner Legal -->
       <div class="section-card">
         <h3 class="section-title">
           <span>Banner Legal / Ticker Inferior</span>
@@ -392,7 +338,6 @@
         </div>
       </div>
 
-      <!-- Playlist -->
       <div class="section-card">
         <h3 class="section-title">
           <span>Secuencia de Reproducción</span>
@@ -404,7 +349,7 @@
       </div>
     </div>
 
-    <!-- Vista Previa Interactiva -->
+    <!-- Vista Previa Ampliada -->
     <div>
       <div class="section-card" style="position: sticky; top: 24px;">
         <h3 class="section-title">
@@ -422,13 +367,11 @@
     </div>
   </div>
 
-  <!-- Notification Toast -->
   <div id="copyToast">
     <svg class="motion-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
     <span>URL copiada al portapapeles</span>
   </div>
 
-  <!-- POPUP / MODAL UNIVERSAL -->
   <div id="customModal" class="modal-overlay">
     <div class="modal-card">
       <div id="modalTitle" class="modal-title">Confirmación Requerida</div>
