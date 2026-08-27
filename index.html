@@ -113,6 +113,16 @@
     .fx-none { opacity: 0; transition: opacity 0.05s linear; }
     .fx-none.active { opacity: 1 !important; }
 
+    /* ---------- MARCO DECORATIVO (overlay PNG con transparencia) ---------- */
+    #content-frame-overlay {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: fill; /* el marco se diseña a medida del encuadre del contenido */
+      z-index: 45; /* por debajo de la insignia (50), por encima del contenido */
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
     /* ---------- INSIGNIA DE CONTENIDO (OPORTUNIDAD / VENDIDO / etc.) ---------- */
     #content-badge {
       position: absolute; top: 24px; left: 24px;
@@ -165,7 +175,9 @@
     <p id="empty-state-detail">No hay medios cargados para hoy en esta pantalla.</p>
   </div>
 
-  <div id="slider-container" class="orientation-270"></div>
+  <div id="slider-container" class="orientation-270">
+    <img id="content-frame-overlay" class="hidden" alt="">
+  </div>
   <div id="content-badge" class="hidden"></div>
   <div id="legal-banner" class="hidden"></div>
   <div id="status-badge" class="hidden">Modo Offline</div>
@@ -345,6 +357,18 @@
       }
     }
 
+    /** Muestra u oculta el marco decorativo (overlay PNG) del ítem actual. */
+    function updateContentFrame(frameUrl) {
+      const frameEl = document.getElementById('content-frame-overlay');
+      if (!frameEl) return;
+      if (frameUrl) {
+        if (frameEl.src !== frameUrl) frameEl.src = frameUrl;
+        frameEl.classList.remove('hidden');
+      } else {
+        frameEl.classList.add('hidden');
+      }
+    }
+
     function updateBackgroundAudio(audioSettings) {
       if (!audioSettings || !audioSettings.enabled || !audioSettings.audioUrl) {
         bgMusic.pause();
@@ -377,14 +401,20 @@
 
     /** Calcula el playlist correspondiente al día de hoy, con retrocompatibilidad */
     function resolvePlaylistForToday(data) {
-      const today = getCurrentDayName();
       let list;
-      if (data.schedule && Array.isArray(data.schedule[today])) {
-        list = data.schedule[today];
-      } else if (Array.isArray(data.playlist)) {
-        list = data.playlist; // retrocompatibilidad con documentos sin "schedule"
+      if (data.sameContentAllDays === true && data.schedule && Array.isArray(data.schedule.todos)) {
+        // Modo especial: esta TV ignora el día de la semana y siempre usa el
+        // bucket "todos", configurado una sola vez desde el admin.
+        list = data.schedule.todos;
       } else {
-        list = [];
+        const today = getCurrentDayName();
+        if (data.schedule && Array.isArray(data.schedule[today])) {
+          list = data.schedule[today];
+        } else if (Array.isArray(data.playlist)) {
+          list = data.playlist; // retrocompatibilidad con documentos sin "schedule"
+        } else {
+          list = [];
+        }
       }
       // Los ítems desactivados desde el admin (active === false) se guardan
       // igual en Firestore para no perder su configuración, pero no se muestran.
@@ -456,6 +486,7 @@
         fit: item.fit || 'cover',
         duration: item.type === 'video' ? null : (item.duration || 7),
         badgeText: item.badgeText || null,
+        frameUrl: item.frameUrl || null,
         kenBurns: !!item.kenBurns
       };
     }
@@ -569,6 +600,7 @@
           consecutiveErrors = 0;
           preloadItem(nextItem); // precarga el siguiente mientras se muestra este
           updateContentBadge(item.badgeText);
+          updateContentFrame(item.frameUrl);
         });
       };
 
