@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard Multi-TV Profesional - Portanko</title>
+  <title>Dashboard Multi-TV Profesional - Portanko Motion Graphics</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
@@ -14,6 +14,7 @@
       --accent-hover: #b45309;
       --text: #f8fafc;
       --border: #334155;
+      --cyan: #38bdf8;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -21,6 +22,102 @@
 
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding-bottom: 16px; margin-bottom: 24px; }
     
+    /* =========================================================
+       MOTION GRAPHICS CSS & ANIMACIONES VECTORIALES
+       ========================================================= */
+    .motion-icon {
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      vertical-align: middle;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Gear Rotate Motion */
+    .motion-gear {
+      animation: rotateMotion 12s linear infinite;
+    }
+    @keyframes rotateMotion {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Copy Icon Motion (Bounce & Pulse) */
+    .flaticon-copy-btn:hover .motion-copy {
+      animation: copyPulse 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes copyPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3) rotate(-10deg); stroke: #10b981; }
+      100% { transform: scale(1); }
+    }
+
+    /* Info Motion Signal Glow */
+    .info-btn-motion {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--cyan);
+      border: 1px solid var(--cyan);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .info-btn-motion::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(56,189,248,0.4) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .info-btn-motion:hover {
+      transform: scale(1.15) rotate(15deg);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    .info-btn-motion:hover::before {
+      opacity: 1;
+    }
+
+    /* Plus TV Motion Add */
+    .btn-add-tv {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-add-tv:hover {
+      background: #059669;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-add-tv:hover .motion-plus {
+      transform: rotate(90deg) scale(1.2);
+    }
+
+    /* Motion TV Wrapper */
     .tv-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
     
     .tv-btn-wrapper {
@@ -31,18 +128,19 @@
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-      transition: all 0.25s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .tv-btn-wrapper:hover {
       border-color: var(--accent);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 15px -3px rgba(217, 119, 6, 0.25);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 20px -3px rgba(217, 119, 6, 0.3);
     }
 
     .tv-btn-wrapper.active {
       border-color: #f59e0b;
-      box-shadow: 0 0 15px rgba(217, 119, 6, 0.5);
+      box-shadow: 0 0 20px rgba(217, 119, 6, 0.6);
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
     }
 
     .tv-btn { 
@@ -57,20 +155,13 @@
       gap: 8px;
     }
 
-    .tv-btn-wrapper.active .tv-btn {
-      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-      color: #fff;
-    }
-
-    /* Botón Flaticon Copiar URL */
     .flaticon-copy-btn {
       background: rgba(15, 23, 42, 0.6);
       border: none;
       border-left: 1px solid var(--border);
-      color: #38bdf8;
+      color: var(--cyan);
       padding: 10px 12px;
       cursor: pointer;
-      font-size: 13px;
       transition: all 0.2s;
       display: flex;
       align-items: center;
@@ -78,25 +169,12 @@
     }
 
     .flaticon-copy-btn:hover {
-      background: #38bdf8;
+      background: var(--cyan);
       color: #0f172a;
     }
 
-    .btn-add-tv { 
-      background: #10b981; 
-      color: #fff; 
-      border: none; 
-      padding: 10px 18px; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      font-weight: bold; 
-      transition: all 0.2s;
-    }
-
-    .btn-add-tv:hover { background: #059669; transform: translateY(-2px); }
-
+    /* General Styling Layout */
     .main-grid { display: grid; grid-template-columns: 1fr 440px; gap: 24px; }
-
     .section-card { background: var(--card); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
     .section-title { color: var(--accent); font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 
@@ -104,28 +182,10 @@
     label { font-size: 11px; text-transform: uppercase; color: #94a3b8; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
     input, select, textarea { background: #0f172a; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; width: 100%; font-size: 13px; }
 
-    .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: background 0.2s; }
-    .btn-action:hover { background: var(--accent-hover); }
+    .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; }
+    .btn-action:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
-    .info-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      background: #334155;
-      color: #38bdf8;
-      font-size: 11px;
-      font-weight: bold;
-      cursor: pointer;
-      border: 1px solid #475569;
-      transition: all 0.2s;
-    }
-
-    .info-btn:hover { background: #38bdf8; color: #0f172a; }
-
-    /* Toast Notificación Copiado */
+    /* Toast Notification */
     #copyToast {
       position: fixed;
       bottom: 20px;
@@ -142,54 +202,14 @@
       pointer-events: none;
       transition: opacity 0.3s ease, transform 0.3s ease;
       transform: translateY(20px);
-    }
-
-    #copyToast.show {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateY(0);
-    }
-
-    /* Modal / Popup */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(2, 6, 23, 0.85);
-      backdrop-filter: blur(8px);
-      z-index: 9999;
       display: flex;
-      justify-content: center;
       align-items: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease;
+      gap: 10px;
     }
 
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    #copyToast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
-    .modal-card {
-      background: var(--card);
-      border: 1px solid var(--accent);
-      border-radius: 12px;
-      width: 100%;
-      max-width: 460px;
-      padding: 28px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-      transform: translateY(-20px);
-      transition: transform 0.25s ease;
-    }
-
-    .modal-overlay.active .modal-card { transform: translateY(0); }
-
-    .modal-title { color: var(--accent); font-size: 18px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
-    .modal-body { font-size: 14px; color: #cbd5e1; line-height: 1.5; margin-bottom: 24px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
-
-    .btn-modal-cancel { background: #334155; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .btn-modal-confirm { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .btn-modal-danger { background: #ef4444; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-
-    /* Stage de Vista Previa */
+    /* Stage Preview */
     .preview-stage { width: 100%; height: 540px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
     .preview-screen { background: #111; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 2px solid #475569; display: flex; justify-content: center; align-items: center; }
     
@@ -213,6 +233,18 @@
 
     .playlist-item { display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
     .playlist-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
+
+    /* Modal Overlay */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-card { background: var(--card); border: 1px solid var(--accent); border-radius: 12px; width: 100%; max-width: 460px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); transform: translateY(-20px); transition: transform 0.25s ease; }
+    .modal-overlay.active .modal-card { transform: translateY(0); }
+    .modal-title { color: var(--accent); font-size: 18px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .modal-body { font-size: 14px; color: #cbd5e1; line-height: 1.5; margin-bottom: 24px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+    .btn-modal-cancel { background: #334155; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-modal-confirm { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-modal-danger { background: #ef4444; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -222,23 +254,28 @@
     <button onclick="logout()" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Cerrar Sesión</button>
   </div>
 
+  <!-- Botonera Interactiva con Motion Graphics Vectoriales -->
   <div class="tv-bar" id="tvContainer">
     <span style="color:#94a3b8; font-size:13px;">Cargando pantallas...</span>
   </div>
 
   <div class="main-grid">
     <div>
-      <!-- Ajustes de Pantalla, Pulgadas y Audio -->
+      <!-- Ajustes de Pantalla & Música -->
       <div class="section-card">
         <h3 class="section-title">
           <span>Ajustes de Pantalla & Música</span>
-          <span class="info-btn" onclick="showInfoModal('Ajustes de Pantalla', 'Configura la orientación responsive (0°, 90°, 270°) del televisor físico.')">?</span>
+          <span class="info-btn-motion" onclick="showInfoModal('Ajustes de Pantalla', 'Configura la orientación responsive (0°, 90°, 270°) del televisor físico.')">
+            <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </span>
         </h3>
         <div class="form-row">
           <div style="flex: 1;">
             <label>
               Orientación TV
-              <span class="info-btn" onclick="showInfoModal('Orientación TV', 'Usar 270° o 90° si el televisor físico está colgado de costado.')">?</span>
+              <span class="info-btn-motion" onclick="showInfoModal('Orientación TV', 'Usar 270° o 90° si el televisor físico está colgado de costado.')">
+                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              </span>
             </label>
             <select id="orientationSelect" onchange="updatePreviewOrientation()">
               <option value="0">Horizontal (0°)</option>
@@ -249,7 +286,9 @@
           <div style="flex: 1;">
             <label>
               Pulgadas TV
-              <span class="info-btn" onclick="showInfoModal('Tamaño de TV', 'Simula la escala visual en pantalla física desde 32 pulgadas hasta 50 pulgadas.')">?</span>
+              <span class="info-btn-motion" onclick="showInfoModal('Tamaño de TV', 'Simula la escala visual en pantalla física desde 32 pulgadas hasta 50 pulgadas.')">
+                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              </span>
             </label>
             <select id="sizeSelect" onchange="updatePreviewOrientation()">
               <option value="32">32 Pulgadas</option>
@@ -283,7 +322,9 @@
       <div class="section-card">
         <h3 class="section-title">
           <span>Subir Nuevo Contenido (Imagen / Video)</span>
-          <span class="info-btn" onclick="showInfoModal('Gestor Multimedia', 'Si la imagen se ve acostada en la TV, usa la opción Rotación Imagen para corregir su orientación independientemente de la TV.')">?</span>
+          <span class="info-btn-motion" onclick="showInfoModal('Gestor Multimedia', 'Si la imagen se ve acostada en la TV, usa la opción Rotación Imagen para corregir su orientación independientemente de la TV.')">
+            <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </span>
         </h3>
         <div class="form-row">
           <div style="flex: 2;">
@@ -309,7 +350,9 @@
           <div style="flex: 1;">
             <label>
               Rotación Imagen
-              <span class="info-btn" onclick="showInfoModal('Rotación Imagen', 'Permite enderezar una imagen vertical cargada de costado (ej. 90° o 270°).')">?</span>
+              <span class="info-btn-motion" onclick="showInfoModal('Rotación Imagen', 'Permite enderezar una imagen vertical cargada de costado (ej. 90° o 270°).')">
+                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              </span>
             </label>
             <select id="itemRotationSelect" onchange="updateSelectedLocalFileRotation()">
               <option value="0" selected>Normal (0°)</option>
@@ -330,7 +373,9 @@
       <div class="section-card">
         <h3 class="section-title">
           <span>Banner Legal / Ticker Inferior</span>
-          <span class="info-btn" onclick="showInfoModal('Banner Legal', 'Muestra un texto deslizable o marquesina fija en la parte inferior.')">?</span>
+          <span class="info-btn-motion" onclick="showInfoModal('Banner Legal', 'Muestra un texto deslizable o marquesina fija en la parte inferior.')">
+            <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </span>
         </h3>
         <div class="form-row">
           <div style="flex: 3;">
@@ -351,7 +396,9 @@
       <div class="section-card">
         <h3 class="section-title">
           <span>Secuencia de Reproducción</span>
-          <span class="info-btn" onclick="showInfoModal('Playlist', 'Listado de contenidos asignados a esta TV.')">?</span>
+          <span class="info-btn-motion" onclick="showInfoModal('Playlist', 'Listado de contenidos asignados a esta TV.')">
+            <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </span>
         </h3>
         <div id="playlistContainer"><p style="color:#94a3b8;">Cargando...</p></div>
       </div>
@@ -375,7 +422,11 @@
     </div>
   </div>
 
-  <div id="copyToast">📋 URL copiada al portapapeles</div>
+  <!-- Notification Toast -->
+  <div id="copyToast">
+    <svg class="motion-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <span>URL copiada al portapapeles</span>
+  </div>
 
   <!-- POPUP / MODAL UNIVERSAL -->
   <div id="customModal" class="modal-overlay">
@@ -424,7 +475,7 @@
     function closeModal() { document.getElementById('customModal').classList.remove('active'); }
 
     function showInfoModal(title, text) {
-      document.getElementById('modalTitle').innerText = `ℹ️ INSTRUCTIVO: ${title}`;
+      document.getElementById('modalTitle').innerText = `INSTRUCTIVO: ${title}`;
       document.getElementById('modalBody').innerText = text;
       document.getElementById('modalActions').innerHTML = `<button class="btn-modal-confirm" onclick="closeModal()">Entendido</button>`;
       document.getElementById('customModal').classList.add('active');
@@ -498,9 +549,13 @@
             wrapper.innerHTML = `
               <button class="tv-btn" onclick="selectTV('${tvId}')">
                 <span>${data.name || tvId.toUpperCase()}</span>
-                <span class="info-btn" onclick="event.stopPropagation(); showTVActions('${tvId}', '${data.name}')" title="Opciones">⚙️</span>
+                <span onclick="event.stopPropagation(); showTVActions('${tvId}', '${data.name}')" title="Opciones" style="display:inline-flex; align-items:center;">
+                  <svg class="motion-icon motion-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                </span>
               </button>
-              <button class="flaticon-copy-btn" onclick="event.stopPropagation(); copyTVUrl('${tvId}')" title="Copiar URL directa a esta TV">📋</button>
+              <button class="flaticon-copy-btn" onclick="event.stopPropagation(); copyTVUrl('${tvId}')" title="Copiar URL directa a esta TV">
+                <svg class="motion-icon motion-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              </button>
             `;
             
             tvContainer.appendChild(wrapper);
@@ -509,7 +564,10 @@
 
         const addBtn = document.createElement('button');
         addBtn.className = 'btn-add-tv';
-        addBtn.innerText = '+ Agregar Nueva TV';
+        addBtn.innerHTML = `
+          <svg class="motion-icon motion-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>Agregar Nueva TV</span>
+        `;
         addBtn.onclick = addNewTV;
         tvContainer.appendChild(addBtn);
       });
@@ -524,7 +582,7 @@
         <p style="margin-bottom:12px;"><strong>URL del Televisor:</strong></p>
         <div style="display:flex; gap:8px; margin-bottom:16px;">
           <input type="text" value="${tvUrl}" readonly onclick="this.select()">
-          <button style="background:#38bdf8; color:#0f172a; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="copyTVUrl('${tvId}')">📋 Copiar</button>
+          <button style="background:#38bdf8; color:#0f172a; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="copyTVUrl('${tvId}')">Copiar</button>
         </div>
         <p>¿Deseas eliminar permanentemente este televisor?</p>
       `;
