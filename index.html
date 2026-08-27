@@ -442,14 +442,38 @@
       );
     }
 
+    /** Reduce un ítem a solo los campos que afectan lo que se VE en pantalla.
+     * Deliberadamente deja afuera "durationSeconds" (la duración real medida
+     * del video, que es pura metadata para el dashboard del admin) y otros
+     * campos de referencia (id, mediaId, title) que no influyen en la
+     * reproducción — así una escritura de fondo que solo actualiza esos
+     * datos no dispara un reinicio del slider ni corta un video a mitad. */
+    function playbackSignatureOf(item) {
+      return {
+        type: item.type,
+        url: item.url,
+        rotation: item.rotation || 0,
+        fit: item.fit || 'cover',
+        duration: item.type === 'video' ? null : (item.duration || 7),
+        badgeText: item.badgeText || null,
+        kenBurns: !!item.kenBurns
+      };
+    }
+
+    let lastPlaylistSignature = '';
+
     function applyPlaylistFromData(data) {
       const newPlaylist = resolvePlaylistForToday(data);
+      const newSignature = JSON.stringify(newPlaylist.map(playbackSignatureOf));
 
-      if (JSON.stringify(newPlaylist) === JSON.stringify(playlist)) {
-        return; // nada cambió, no reiniciamos el slider
-      }
-
+      // Siempre refrescamos la referencia de datos (por si cambió durationSeconds
+      // u otro metadato), pero solo reiniciamos el slider si algo VISUAL cambió.
       playlist = newPlaylist;
+      if (newSignature === lastPlaylistSignature) {
+        return; // nada relevante para la reproducción cambió — no cortar nada en curso
+      }
+      lastPlaylistSignature = newSignature;
+
       currentIndex = 0;
       consecutiveErrors = 0;
 
