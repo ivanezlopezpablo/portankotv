@@ -86,6 +86,20 @@
     .rot-180 { transform: rotate(180deg); }
     .rot-270 { transform: rotate(270deg); width: 100vh !important; height: 100vw !important; }
 
+    /* ---------- INSIGNIA DE CONTENIDO (OPORTUNIDAD / VENDIDO / etc.) ---------- */
+    #content-badge {
+      position: absolute; top: 24px; left: 24px;
+      background: #991b1b; color: #fff;
+      padding: 10px 18px; border-radius: 6px;
+      font-weight: bold; font-size: 22px; letter-spacing: 1px;
+      z-index: 50; box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+      transition: opacity 0.4s ease;
+    }
+
+    /* ---------- EFECTO KEN BURNS (acercamiento suave opcional por imagen) ---------- */
+    @keyframes kenBurnsZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
+    .ken-burns { animation-name: kenBurnsZoom; animation-timing-function: linear; animation-fill-mode: forwards; }
+
     /* ---------- BANNER LEGAL ---------- */
     #legal-banner {
       position: absolute; bottom: 0; left: 0; width: 100%;
@@ -125,6 +139,7 @@
   </div>
 
   <div id="slider-container" class="orientation-270"></div>
+  <div id="content-badge" class="hidden"></div>
   <div id="legal-banner" class="hidden"></div>
   <div id="status-badge" class="hidden">Modo Offline</div>
 
@@ -274,6 +289,18 @@
       legalBanner.textContent = config.text || DEFAULT_LEGAL_TEXT;
       if (config.show === false) legalBanner.classList.add("hidden");
       else legalBanner.classList.remove("hidden");
+    }
+
+    /** Muestra u oculta la insignia (OPORTUNIDAD / VENDIDO / etc.) del ítem actual. */
+    function updateContentBadge(badgeText) {
+      const badgeEl = document.getElementById('content-badge');
+      if (!badgeEl) return;
+      if (badgeText) {
+        badgeEl.textContent = badgeText;
+        badgeEl.classList.remove('hidden');
+      } else {
+        badgeEl.classList.add('hidden');
+      }
     }
 
     function updateBackgroundAudio(audioSettings) {
@@ -469,6 +496,7 @@
           firstRenderDone = true;
           consecutiveErrors = 0;
           preloadItem(nextItem); // precarga el siguiente mientras se muestra este
+          updateContentBadge(item.badgeText);
         });
       };
 
@@ -496,9 +524,15 @@
         mediaEl = document.createElement('img');
         mediaEl.src = item.url;
         mediaEl.className = `fit-${fit}`;
+        const durationMs = (item.duration || 7) * 1000;
+        if (item.kenBurns) {
+          // El zoom dura la exhibición completa más el tiempo del fundido de entrada,
+          // para que el acercamiento se note incluso durante el crossfade.
+          mediaEl.classList.add('ken-burns');
+          mediaEl.style.animationDuration = ((durationMs + 1600) / 1000) + 's';
+        }
         mediaEl.onload = () => {
           activateWrapper();
-          const durationMs = (item.duration || 7) * 1000;
           stepTimeout = setTimeout(() => { nextSlide(); }, durationMs);
         };
         mediaEl.onerror = handleItemError;
@@ -512,9 +546,26 @@
     }
 
     /* =========================================================
+       HEARTBEAT: avisa periódicamente que esta TV está en línea, para
+       que el panel admin pueda mostrar "conectada" / "sin señal".
+       ========================================================= */
+    function sendHeartbeat() {
+      try {
+        db.collection("portanko_tvs").doc(TV_ID).set({
+          status: {
+            lastSeenIso: new Date().toISOString(),
+            lastSeenServer: firebase.firestore.FieldValue.serverTimestamp()
+          }
+        }, { merge: true }).catch(() => { /* si falla, se reintenta en el próximo ciclo */ });
+      } catch (e) { /* no crítico: el heartbeat nunca debe interrumpir la reproducción */ }
+    }
+
+    /* =========================================================
        INICIO
        ========================================================= */
     listenTVConfiguration();
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 60000);
 
     // Watchdog: si a los 20s no renderizó nada (config vacía o URL colgada),
     // muestra el estado vacío en lugar de dejar el loader infinito.
