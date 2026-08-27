@@ -46,6 +46,18 @@
     .day-tab:hover { background: #1e3a8a; color: #fff; }
     .day-tab.active { background: var(--accent); border-color: #ef4444; color: #fff; box-shadow: 0 0 12px rgba(153, 27, 27, 0.6); }
 
+    /* Mini dashboard semanal */
+    .dash-scroll { overflow-x: auto; }
+    .dash-header-row { display: grid; grid-template-columns: 120px 90px 1fr 130px 80px; gap: 10px; padding: 0 12px 6px; font-size: 10px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; min-width: 560px; }
+    .dash-row { display: grid; grid-template-columns: 120px 90px 1fr 130px 80px; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(2,6,23,0.5); margin-bottom: 6px; cursor: pointer; transition: all 0.15s; font-size: 12px; min-width: 560px; }
+    .dash-row:hover { border-color: var(--accent); background: rgba(153,27,27,0.12); }
+    .dash-row.active { border-color: #ef4444; background: linear-gradient(135deg, rgba(153,27,27,0.25) 0%, rgba(127,29,29,0.15) 100%); }
+    .dash-day { font-weight: 700; text-transform: uppercase; color: #fca5a5; }
+    .dash-metric { color: #cbd5e1; }
+    .dash-metric small { color: #64748b; }
+    .dash-go { background: #1e3a8a; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; justify-self: end; }
+    .dash-go:hover { background: #2563eb; }
+
     .main-grid { display: grid; grid-template-columns: 1fr 560px; gap: 24px; }
     .section-card { background: var(--card); backdrop-filter: blur(12px); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
     .section-title { color: #fca5a5; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
@@ -155,6 +167,20 @@
 
   <div class="tv-bar" id="tvContainer">
     <span style="color:#93c5fd; font-size:13px;">Cargando pantallas...</span>
+  </div>
+
+  <div class="section-card">
+    <h3 class="section-title">
+      <span>Resumen de la Semana — <span id="dashTvName">TV activa</span></span>
+      <small style="font-size:11px; color:#38bdf8;" id="dashWeekTotal">Cargando...</small>
+    </h3>
+    <p class="section-subtitle">Tocá cualquier día (o "Ir →") para saltar directo a su programación.</p>
+    <div class="dash-scroll">
+      <div class="dash-header-row">
+        <span>Día</span><span>Ítems</span><span>Imágenes / Videos</span><span>Duración total</span><span></span>
+      </div>
+      <div id="weekDashboard"><p style="color:#93c5fd; font-size:12px;">Cargando resumen...</p></div>
+    </div>
   </div>
 
   <div class="days-bar" id="daysContainer"></div>
@@ -534,6 +560,157 @@
       renderDaySchedule();
     }
 
+    /** Cambia de día Y desplaza la pantalla hasta la programación — usado desde el mini dashboard. */
+    function goToDay(dayId) {
+      selectDay(dayId);
+      const el = document.getElementById('playlistContainer');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    /* =========================================================
+       MEDICIÓN DE DURACIÓN REAL DE VIDEOS
+       (los videos se reproducen enteros en la TV; para que el dashboard
+       pueda sumar minutos reales, medimos su duración con un <video> oculto)
+       ========================================================= */
+    const videoDurationCache = {};      // url -> segundos, cacheado durante la sesión
+    const videoDurationMeasuring = new Set(); // urls que ya están siendo medidas, evita duplicar trabajo
+
+    function measureVideoDurationByUrl(url) {
+      if (videoDurationCache[url] !== undefined) return Promise.resolve(videoDurationCache[url]);
+      return new Promise(resolve => {
+        try {
+          const v = document.createElement('video');
+          v.preload = 'metadata';
+          v.muted = true;
+          v.src = url;
+          const finish = (val) => { videoDurationCache[url] = val; resolve(val); };
+          v.onloadedmetadata = () => finish(Math.round(v.duration) || null);
+          v.onerror = () => finish(null);
+          setTimeout(() => finish(videoDurationCache[url] !== undefined ? videoDurationCache[url] : null), 8000);
+        } catch (e) { resolve(null); }
+      });
+    }
+
+    function measureLocalVideoDuration(file) {
+      return new Promise(resolve => {
+        try {
+          const v = document.createElement('video');
+          v.preload = 'metadata';
+          v.muted = true;
+          const objUrl = URL.createObjectURL(file);
+          v.src = objUrl;
+          const finish = (val) => { URL.revokeObjectURL(objUrl); resolve(val); };
+          v.onloadedmetadata = () => finish(Math.round(v.duration) || null);
+          v.onerror = () => finish(null);
+          setTimeout(() => finish(null), 6000);
+        } catch (e) { resolve(null); }
+      });
+    }
+
+    /** Completa retroactivamente la duración de videos ya asignados en el schedule
+     * de la TV activa que todavía no tienen "durationSeconds" guardado. */
+    async function ensureScheduleVideoDurations() {
+      if (!tvData.schedule) return;
+      const urlsNeeded = new Set();
+      DAYS.forEach(d => (tvData.schedule[d.id] || []).forEach(item => {
+        if (item.type === 'video' && item.durationSeconds == null && !videoDurationMeasuring.has(item.url)) {
+          urlsNeeded.add(item.url);
+        }
+      }));
+      if (urlsNeeded.size === 0) return;
+
+      let changed = false;
+      for (const url of urlsNeeded) {
+        videoDurationMeasuring.add(url);
+        const seconds = await measureVideoDurationByUrl(url);
+        videoDurationMeasuring.delete(url);
+        if (seconds != null) {
+          DAYS.forEach(d => (tvData.schedule[d.id] || []).forEach(item => {
+            if (item.type === 'video' && item.url === url && item.durationSeconds == null) {
+              item.durationSeconds = seconds;
+              changed = true;
+            }
+          }));
+        }
+      }
+      if (changed) {
+        renderWeekDashboard();
+        try { await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true }); }
+        catch (e) { console.warn('No se pudo guardar la duración medida de video:', e); }
+      }
+    }
+
+    /** Igual que arriba, pero para la nube interna global (portanko_media). */
+    async function ensureRepoVideoDurations() {
+      const pending = mediaRepository.filter(m => m.type === 'video' && m.durationSeconds == null && !videoDurationMeasuring.has(m.url));
+      for (const m of pending) {
+        videoDurationMeasuring.add(m.url);
+        const seconds = await measureVideoDurationByUrl(m.url);
+        videoDurationMeasuring.delete(m.url);
+        if (seconds != null) {
+          m.durationSeconds = seconds;
+          try { await db.collection('portanko_media').doc(m.id).set({ durationSeconds: seconds }, { merge: true }); }
+          catch (e) { console.warn('No se pudo guardar la duración medida de video en la nube:', e); }
+        }
+      }
+    }
+
+    /* =========================================================
+       MINI DASHBOARD SEMANAL
+       ========================================================= */
+    function formatDuration(totalSeconds) {
+      totalSeconds = Math.round(totalSeconds || 0);
+      const m = Math.floor(totalSeconds / 60);
+      const s = totalSeconds % 60;
+      return m > 0 ? `${m}m ${s}s` : `${s}s`;
+    }
+
+    function computeAllDaysStats() {
+      const stats = {};
+      DAYS.forEach(d => {
+        const list = (tvData.schedule && tvData.schedule[d.id]) || [];
+        const vids = list.filter(i => i.type === 'video');
+        const imgs = list.filter(i => i.type !== 'video');
+        const imgSeconds = imgs.reduce((s, i) => s + (i.duration || 7), 0);
+        const knownVids = vids.filter(v => typeof v.durationSeconds === 'number');
+        const vidSeconds = knownVids.reduce((s, i) => s + i.durationSeconds, 0);
+        stats[d.id] = {
+          total: list.length, imgCount: imgs.length, vidCount: vids.length,
+          imgSeconds, vidSeconds, unknownVidCount: vids.length - knownVids.length
+        };
+      });
+      return stats;
+    }
+
+    function renderWeekDashboard() {
+      const container = document.getElementById('weekDashboard');
+      if (!container) return;
+      document.getElementById('dashTvName').innerText = (tvsList.find(t => t.id === currentTV) || {}).name || currentTV;
+
+      const stats = computeAllDaysStats();
+      let weekItems = 0, weekSeconds = 0, weekUnknownVid = 0;
+
+      const rows = DAYS.map(d => {
+        const st = stats[d.id];
+        weekItems += st.total;
+        weekSeconds += st.imgSeconds + st.vidSeconds;
+        weekUnknownVid += st.unknownVidCount;
+        const knownTotal = st.imgSeconds + st.vidSeconds;
+        return `
+          <div class="dash-row ${d.id === currentDay ? 'active' : ''}" onclick="goToDay('${d.id}')">
+            <span class="dash-day">${d.label}</span>
+            <span class="dash-metric">${st.total} ítem(s)</span>
+            <span class="dash-metric">${st.imgCount} img · ${st.vidCount} video(s)${st.unknownVidCount ? ` <small>(${st.unknownVidCount} sin medir)</small>` : ''}</span>
+            <span class="dash-metric">${formatDuration(knownTotal)}${st.unknownVidCount ? ' +' : ''}</span>
+            <button class="dash-go" onclick="event.stopPropagation(); goToDay('${d.id}')">Ir →</button>
+          </div>`;
+      }).join('');
+
+      container.innerHTML = rows;
+      document.getElementById('dashWeekTotal').innerText =
+        `${weekItems} ítem(s) en la semana · ~${formatDuration(weekSeconds)}${weekUnknownVid ? ` (+${weekUnknownVid} video(s) sin medir)` : ''}`;
+    }
+
     /* =========================================================
        PREVIEW LOCAL (ANTES DE SUBIR)
        ========================================================= */
@@ -682,6 +859,8 @@
         updateBannerPreview();
         renderDaysBar();
         renderDaySchedule();
+        renderWeekDashboard();
+        ensureScheduleVideoDurations(); // completa duraciones de video faltantes en segundo plano
       }, err => { console.error(err); showToast('Error cargando la configuración de la TV.', true); });
     }
 
@@ -692,6 +871,7 @@
       db.collection('portanko_media').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
         mediaRepository = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
         renderRepository();
+        ensureRepoVideoDurations(); // completa duraciones de video faltantes en segundo plano
       }, err => { console.error(err); showToast('No se pudo cargar la nube interna.', true); });
     }
 
@@ -828,6 +1008,7 @@
               url: media.url,
               type: media.type,
               duration: media.type === 'video' ? null : duration,
+              durationSeconds: media.type === 'video' ? (media.durationSeconds ?? null) : null,
               rotation, fit,
               badgeText: media.badgeText || null
             });
@@ -837,6 +1018,7 @@
         }
         showToast(`Asignado a ${tvIds.length} pantalla(s) y ${dayIds.length} día(s).`);
         renderDaySchedule();
+        renderWeekDashboard();
       } catch (err) {
         console.error(err);
         showToast('Error al asignar el contenido.', true);
@@ -863,6 +1045,7 @@
       const stats = computeDayStats(dayList);
       document.getElementById('statsCounter').innerText =
         `${stats.total} ítem(s) · ${stats.imgs} img · ${stats.vids} video(s) · ~${stats.totalSeconds}s de imágenes`;
+      renderWeekDashboard();
 
       container.innerHTML = "";
       if (dayList.length === 0) {
@@ -1006,6 +1189,10 @@
       const storageRef = storage.ref(storagePath);
 
       try {
+        // Para videos, medimos su duración real (localmente, antes de subir) para que
+        // el dashboard semanal pueda sumar minutos reales desde el primer momento.
+        const measuredDurationSeconds = isVideo ? await measureLocalVideoDuration(file) : null;
+
         const snapshot = await storageRef.put(file);
         const downloadURL = await snapshot.ref.getDownloadURL();
 
@@ -1015,6 +1202,7 @@
           storagePath,
           type: isVideo ? 'video' : 'image',
           duration: isVideo ? null : (parseInt(document.getElementById('mediaDuration').value) || 7),
+          durationSeconds: measuredDurationSeconds,
           rotation: parseInt(document.getElementById('itemRotationSelect').value) || 0,
           fit: document.getElementById('itemFitSelect').value || 'cover',
           badgeText: document.getElementById('badgeSelect').value || null,
