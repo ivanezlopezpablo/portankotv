@@ -139,11 +139,10 @@
     .btn-modal-confirm { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .btn-modal-danger { background: #ef4444; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
 
-    /* Stage de Vista Previa y Simulador de Pulgadas (32" a 50") */
+    /* Stage de Vista Previa */
     .preview-stage { width: 100%; height: 540px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
-    .preview-screen { background: #111; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 2px solid #475569; }
+    .preview-screen { background: #111; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 2px solid #475569; display: flex; justify-content: center; align-items: center; }
     
-    /* Escalas según orientación y pulgadas */
     .preview-screen.orient-0.size-32 { width: 280px; height: 157px; }
     .preview-screen.orient-0.size-40 { width: 320px; height: 180px; }
     .preview-screen.orient-0.size-43 { width: 340px; height: 191px; }
@@ -156,6 +155,8 @@
 
     .preview-screen.orient-90 { transform: rotate(90deg); }
     .preview-screen.orient-270 { transform: rotate(270deg); }
+
+    .preview-screen img.bg-media, .preview-screen video.bg-media { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
 
     .draggable-badge { position: absolute; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
     .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: #fff; font-size: 8px; padding: 4px; text-align: center; z-index: 15; }
@@ -231,11 +232,11 @@
         <button class="btn-action" onclick="requestSaveTVConfig()">Guardar Ajustes de TV</button>
       </div>
 
-      <!-- Carga Multimedia -->
+      <!-- Carga Multimedia con Previsualización Inmediata -->
       <div class="section-card">
         <h3 class="section-title">
           <span>Subir Nuevo Contenido (Imagen / Video)</span>
-          <span class="info-btn" onclick="showInfoModal('Gestor Multimedia', 'Sube placas, flyers editados, renders o videos MP4.')">?</span>
+          <span class="info-btn" onclick="showInfoModal('Gestor Multimedia', 'Al seleccionar un archivo local, la pantalla de vista previa mostrará inmediatamente cómo quedará en el televisor antes de subirlo.')">?</span>
         </h3>
         <div class="form-row">
           <div style="flex: 2;">
@@ -260,7 +261,7 @@
           </div>
           <div style="flex: 2;">
             <label>Archivo Multimedia (Imagen / MP4)</label>
-            <input type="file" id="mediaFileInput" accept="image/*,video/mp4">
+            <input type="file" id="mediaFileInput" accept="image/*,video/mp4" onchange="previewSelectedLocalFile(this)">
           </div>
         </div>
         <button class="btn-action" style="background:#2563eb;" onclick="uploadMedia()">Subir e Integrar a esta TV</button>
@@ -297,15 +298,16 @@
       </div>
     </div>
 
-    <!-- Vista Previa Interactiva con Tamaño de Pantalla Físico -->
+    <!-- Vista Previa Interactiva -->
     <div>
       <div class="section-card" style="position: sticky; top: 24px;">
         <h3 class="section-title">
           <span>Vista Previa Simulación TV</span>
-          <small id="tvSizeBadge" style="font-size:11px; color:#38bdf8; font-weight:bold;">43" (1080x1920)</small>
+          <small id="tvSizeBadge" style="font-size:11px; color:#38bdf8; font-weight:bold;">43" (Simulación)</small>
         </h3>
         <div class="preview-stage">
           <div id="previewScreen" class="preview-screen orient-270 size-43">
+            <span id="previewPlaceholder" style="color:#64748b; font-size:11px; text-align:center; padding:10px;">Selecciona o carga un archivo</span>
             <div id="badgePreview" class="draggable-badge" style="top: 10px; left: 10px; background: #d97706; display:none;"></div>
             <div id="legalBannerPreview" class="legal-banner-overlay">Portanko Abogados e Inmobiliaria</div>
           </div>
@@ -366,6 +368,35 @@
       `;
       document.getElementById('execConfirmBtn').onclick = () => { closeModal(); onConfirmAction(); };
       document.getElementById('customModal').classList.add('active');
+    }
+
+    // Previsualizar localmente el archivo antes de subir
+    function previewSelectedLocalFile(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const screen = document.getElementById('previewScreen');
+      const oldMedia = screen.querySelector('.bg-media');
+      if (oldMedia) oldMedia.remove();
+
+      const placeholder = document.getElementById('previewPlaceholder');
+      if (placeholder) placeholder.style.display = 'none';
+
+      const fileURL = URL.createObjectURL(file);
+      if (file.type.includes('video')) {
+        const video = document.createElement('video');
+        video.src = fileURL;
+        video.className = 'bg-media';
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        screen.appendChild(video);
+      } else {
+        const img = document.createElement('img');
+        img.src = fileURL;
+        img.className = 'bg-media';
+        screen.appendChild(img);
+      }
     }
 
     function listenAllTVs() {
