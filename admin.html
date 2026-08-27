@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Dashboard Multi-TV Profesional - Portanko</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
@@ -38,6 +39,7 @@
     .tv-btn-wrapper:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 20px -3px rgba(153, 27, 27, 0.4); }
     .tv-btn-wrapper.active { border-color: #ef4444; box-shadow: 0 0 20px rgba(153, 27, 27, 0.7); background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%); }
     .tv-btn { background: transparent; border: none; color: var(--text); padding: 10px 14px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .tv-status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; box-shadow: 0 0 6px currentColor; }
     .flaticon-copy-btn { background: rgba(15, 23, 42, 0.8); border: none; border-left: 1px solid var(--border); color: var(--cyan); padding: 10px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
     .flaticon-copy-btn:hover { background: var(--cyan); color: #020617; }
 
@@ -261,6 +263,7 @@
           <small style="font-size:11px; color:#38bdf8;" id="repoCounter">0 archivos</small>
         </h3>
         <p class="section-subtitle">Tocá un archivo para elegir en qué pantallas y qué días se muestra.</p>
+        <input type="text" id="repoSearch" placeholder="Buscar por título..." oninput="renderRepository()" style="margin-bottom:10px;">
         <div class="repo-grid" id="repoGrid"><div class="repo-empty">Cargando repositorio...</div></div>
       </div>
 
@@ -310,8 +313,11 @@
             <input type="file" id="mediaFileInput" accept="image/*,video/mp4" onchange="previewSelectedLocalFile(this)">
           </div>
         </div>
+        <div class="form-row checkline">
+          <label style="margin:0; text-transform:none;"><input type="checkbox" id="kenBurnsCheckbox"> Efecto Ken Burns (acercamiento suave, solo aplica a imágenes)</label>
+        </div>
         <button class="btn-action blue" onclick="uploadMedia()" id="uploadBtn">Subir a la Nube</button>
-        <p class="section-subtitle" style="margin-top:8px; margin-bottom:0;">Al terminar de subir, se abre automáticamente el asignador de pantallas y días.</p>
+        <p class="section-subtitle" style="margin-top:8px; margin-bottom:0;">Al terminar de subir, se abre automáticamente el asignador de pantallas y días. Las imágenes se redimensionan automáticamente si son muy pesadas.</p>
       </div>
 
       <div class="section-card">
@@ -365,8 +371,6 @@
   </div>
 
   <script>
-    if (!sessionStorage.getItem("portanko_auth")) window.location.href = "login.html";
-
     /* =========================================================
        CONFIG / ESTADO GLOBAL
        ========================================================= */
@@ -381,8 +385,11 @@
       measurementId: "G-0RQ91ZPNWG"
     };
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
     const db = firebase.firestore();
     const storage = firebase.storage();
+
+    let appStarted = false; // evita doble arranque si onAuthStateChanged dispara más de una vez
 
     const DAYS = [
       { id: 'lunes', label: 'Lunes' }, { id: 'martes', label: 'Martes' },
@@ -607,6 +614,44 @@
       });
     }
 
+    /** Redimensiona/comprime una imagen en el navegador antes de subirla, para no
+     * gastar espacio y ancho de banda con fotos de celular de 10+ MB que en una
+     * TV nunca se van a ver a esa resolución. Si la imagen ya es chica, o algo
+     * falla, se sube el archivo original tal cual (nunca bloquea la subida). */
+    const MAX_IMAGE_DIMENSION_PX = 1920;
+    const IMAGE_JPEG_QUALITY = 0.85;
+    function compressImageFile(file) {
+      return new Promise(resolve => {
+        if (!file.type.startsWith('image/')) return resolve(file);
+        try {
+          const objUrl = URL.createObjectURL(file);
+          const img = new Image();
+          img.onload = () => {
+            const { width, height } = img;
+            if (width <= MAX_IMAGE_DIMENSION_PX && height <= MAX_IMAGE_DIMENSION_PX) {
+              URL.revokeObjectURL(objUrl);
+              resolve(file); // ya es suficientemente chica, no hace falta tocarla
+              return;
+            }
+            const scale = Math.min(MAX_IMAGE_DIMENSION_PX / width, MAX_IMAGE_DIMENSION_PX / height);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(width * scale);
+            canvas.height = Math.round(height * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(blob => {
+              URL.revokeObjectURL(objUrl);
+              if (!blob) { resolve(file); return; }
+              const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+              resolve(new File([blob], newName, { type: 'image/jpeg' }));
+            }, 'image/jpeg', IMAGE_JPEG_QUALITY);
+          };
+          img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
+          img.src = objUrl;
+        } catch (e) { resolve(file); }
+      });
+    }
+
     /** Completa retroactivamente la duración de videos ya asignados en el schedule
      * de la TV activa que todavía no tienen "durationSeconds" guardado. */
     async function ensureScheduleVideoDurations() {
@@ -782,6 +827,32 @@
       }, err => { console.error(err); showToast('No se pudo conectar con Firestore.', true); });
     }
 
+    /** Texto relativo tipo "hace 2 min" a partir de un ISO string. */
+    function formatRelativeTime(iso) {
+      if (!iso) return null;
+      const diffMs = Date.now() - new Date(iso).getTime();
+      if (diffMs < 0) return 'hace instantes';
+      const diffMin = Math.floor(diffMs / 60000);
+      if (diffMin < 1) return 'hace instantes';
+      if (diffMin < 60) return `hace ${diffMin} min`;
+      const diffH = Math.floor(diffMin / 60);
+      if (diffH < 24) return `hace ${diffH}h`;
+      const diffD = Math.floor(diffH / 24);
+      return `hace ${diffD}d`;
+    }
+
+    /** Color del punto de estado: verde = recién vista, amarillo = un rato sin
+     * verse, rojo = hace mucho, gris = nunca envió señal. */
+    function tvStatusInfo(status) {
+      const iso = status && status.lastSeenIso;
+      if (!iso) return { color: '#64748b', label: 'Nunca se conectó' };
+      const diffMin = (Date.now() - new Date(iso).getTime()) / 60000;
+      const relative = formatRelativeTime(iso);
+      if (diffMin < 3) return { color: '#22c55e', label: `Conectada · ${relative}` };
+      if (diffMin < 15) return { color: '#eab308', label: `Vista ${relative}` };
+      return { color: '#ef4444', label: `Sin señal · vista ${relative}` };
+    }
+
     /** Dibuja la barra de TVs a partir de la última data conocida. Se puede llamar
      * en cualquier momento (por ejemplo, al cambiar de TV) para que el resaltado
      * en rojo de la pantalla activa se actualice al instante, sin depender de que
@@ -793,11 +864,13 @@
 
       lastTVsSnapshotData.forEach(({ id: tvId, data }) => {
         tvsList.push({ id: tvId, name: data.name || tvId.toUpperCase() });
+        const status = tvStatusInfo(data.status);
 
         const wrapper = document.createElement('div');
         wrapper.className = `tv-btn-wrapper ${tvId === currentTV ? 'active' : ''}`;
         wrapper.innerHTML = `
           <button class="tv-btn" onclick="selectTV('${tvId}')">
+            <span class="tv-status-dot" style="background:${status.color}; color:${status.color};" title="${escapeHtml(status.label)}"></span>
             <span>${escapeHtml(data.name || tvId.toUpperCase())}</span>
             <span onclick="event.stopPropagation(); showTVActions('${tvId}')" title="Opciones" style="display:inline-flex; align-items:center;">
               <svg class="motion-icon motion-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -894,12 +967,25 @@
     function renderRepository() {
       const grid = document.getElementById('repoGrid');
       document.getElementById('repoCounter').innerText = `${mediaRepository.length} archivo(s)`;
+
+      const searchInput = document.getElementById('repoSearch');
+      const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+      const filtered = query
+        ? mediaRepository.filter(item => (item.title || '').toLowerCase().includes(query))
+        : mediaRepository;
+
       grid.innerHTML = "";
+
       if (mediaRepository.length === 0) {
         grid.innerHTML = '<div class="repo-empty">La nube interna está vacía. Subí un archivo más abajo.</div>';
         return;
       }
-      mediaRepository.forEach(item => {
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="repo-empty">Ningún archivo coincide con "${escapeHtml(query)}".</div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
         const div = document.createElement('div');
         div.className = 'repo-item';
         div.title = 'Tocar para asignar a pantallas y días';
@@ -913,20 +999,59 @@
       });
     }
 
-    function requestDeleteRepoItem(mediaId) {
-      showConfirmModal('ELIMINAR DE LA NUBE', 'Esto borra el archivo del repositorio interno y del almacenamiento. Las copias ya programadas en algún día de alguna TV van a seguir funcionando, pero no vas a poder volver a asignarlo desde acá. ¿Continuar?', async () => {
-        const item = mediaRepository.find(x => x.id === mediaId);
-        try {
-          await db.collection('portanko_media').doc(mediaId).delete();
-          if (item && item.storagePath) {
-            try { await storage.ref(item.storagePath).delete(); } catch (e) { /* no crítico */ }
-          }
-          showToast('Archivo eliminado de la nube interna.');
-        } catch (err) {
-          console.error(err);
-          showToast('No se pudo eliminar el archivo.', true);
+    /** Recorre TODAS las TVs (no solo la activa) buscando dónde está asignado
+     * un mediaId, para poder avisar antes de borrarlo de la nube interna. */
+    async function findMediaUsage(mediaId) {
+      const usage = []; // [{tvId, tvName, dayLabels: [...]}]
+      try {
+        const snap = await db.collection('portanko_tvs').get();
+        snap.forEach(doc => {
+          const data = doc.data();
+          if (!data.schedule) return;
+          const dayLabels = [];
+          DAYS.forEach(d => {
+            const list = data.schedule[d.id] || [];
+            if (list.some(item => item.mediaId === mediaId)) dayLabels.push(d.label);
+          });
+          if (dayLabels.length > 0) usage.push({ tvId: doc.id, tvName: data.name || doc.id, dayLabels });
+        });
+      } catch (e) { console.warn('No se pudo verificar en qué TVs está en uso el archivo:', e); }
+      return usage;
+    }
+
+    async function doDeleteRepoItem(mediaId) {
+      const item = mediaRepository.find(x => x.id === mediaId);
+      try {
+        await db.collection('portanko_media').doc(mediaId).delete();
+        if (item && item.storagePath) {
+          try { await storage.ref(item.storagePath).delete(); } catch (e) { /* no crítico */ }
         }
-      }, true);
+        showToast('Archivo eliminado de la nube interna.');
+      } catch (err) {
+        console.error(err);
+        showToast('No se pudo eliminar el archivo.', true);
+      }
+    }
+
+    async function requestDeleteRepoItem(mediaId) {
+      const usage = await findMediaUsage(mediaId);
+
+      if (usage.length > 0) {
+        const listHtml = usage.map(u => `• <strong>${escapeHtml(u.tvName)}</strong>: ${u.dayLabels.join(', ')}`).join('<br>');
+        document.getElementById('modalTitle').innerText = 'ESTE ARCHIVO ESTÁ EN USO';
+        document.getElementById('modalBody').innerHTML = `
+          <p style="margin-bottom:12px;">Todavía está asignado en:</p>
+          <p style="margin-bottom:16px; font-size:12px; color:#93c5fd; line-height:1.8;">${listHtml}</p>
+          <p>Si lo eliminás de la nube ahora, esas pantallas van a dejar de poder mostrarlo (la imagen o video no va a cargar). Te recomendamos desasignarlo primero desde cada día. ¿Igual querés eliminarlo?</p>`;
+        document.getElementById('modalActions').innerHTML = `
+          <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+          <button class="btn-modal-danger" id="forceDeleteRepoBtn">Eliminar de todas formas</button>`;
+        document.getElementById('forceDeleteRepoBtn').onclick = () => { closeModal(); doDeleteRepoItem(mediaId); };
+        document.getElementById('customModal').classList.add('active');
+        return;
+      }
+
+      showConfirmModal('ELIMINAR DE LA NUBE', 'Este archivo no está asignado a ninguna pantalla actualmente. ¿Confirmás que querés eliminarlo definitivamente?', () => doDeleteRepoItem(mediaId), true);
     }
 
     /* =========================================================
@@ -983,7 +1108,11 @@
               <option value="contain" ${media.fit === 'contain' ? 'selected' : ''}>Contain</option>
             </select>
           </div>
-        </div>`;
+        </div>
+        ${media.type !== 'video' ? `
+        <div class="form-row checkline">
+          <label style="margin:0; text-transform:none;"><input type="checkbox" id="assignKenBurns" style="width:auto;" ${media.kenBurns ? 'checked' : ''}> Efecto Ken Burns (acercamiento suave)</label>
+        </div>` : ''}`;
       document.getElementById('modalActions').innerHTML = `
         <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
         <button class="btn-modal-confirm" onclick="confirmAssignMedia('${mediaId}')">Asignar</button>`;
@@ -1004,6 +1133,8 @@
       const duration = parseInt(document.getElementById('assignDuration').value) || 7;
       const rotation = parseInt(document.getElementById('assignRotation').value) || 0;
       const fit = document.getElementById('assignFit').value;
+      const kenBurnsEl = document.getElementById('assignKenBurns');
+      const kenBurns = media.type !== 'video' && !!(kenBurnsEl && kenBurnsEl.checked);
 
       closeModal();
       const loader = document.getElementById('uploadLoader');
@@ -1025,7 +1156,7 @@
               type: media.type,
               duration: media.type === 'video' ? null : duration,
               durationSeconds: media.type === 'video' ? (media.durationSeconds ?? null) : null,
-              rotation, fit,
+              rotation, fit, kenBurns,
               badgeText: media.badgeText || null
             });
           });
@@ -1159,7 +1290,14 @@
             <option value="EN ALQUILER" ${item.badgeText === 'EN ALQUILER' ? 'selected' : ''}>EN ALQUILER</option>
             <option value="CONSULTA LEGAL" ${item.badgeText === 'CONSULTA LEGAL' ? 'selected' : ''}>CONSULTA LEGAL</option>
           </select>
-        </div>`;
+        </div>
+        ${item.type !== 'video' ? `
+        <div style="margin-top:12px;">
+          <label style="display:flex; align-items:center; gap:8px; text-transform:none;">
+            <input type="checkbox" id="editKenBurns" style="width:auto;" ${item.kenBurns ? 'checked' : ''}>
+            Efecto Ken Burns (acercamiento suave durante la exhibición)
+          </label>
+        </div>` : ''}`;
       document.getElementById('modalActions').innerHTML = `
         <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
         <button class="btn-modal-confirm" onclick="saveEditedSlide(${index})">Guardar Cambios</button>`;
@@ -1173,6 +1311,8 @@
       item.rotation = parseInt(document.getElementById('editRotation').value) || 0;
       item.fit = document.getElementById('editFit').value;
       item.badgeText = document.getElementById('editBadge').value || null;
+      const kenBurnsEl = document.getElementById('editKenBurns');
+      item.kenBurns = kenBurnsEl ? kenBurnsEl.checked : false;
       closeModal();
       await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
       showToast('Slide actualizado.');
@@ -1196,20 +1336,25 @@
 
       const loader = document.getElementById('uploadLoader');
       const uploadBtn = document.getElementById('uploadBtn');
-      document.getElementById('uploadLoaderText').innerText = 'Subiendo archivo al repositorio corporativo...';
+      document.getElementById('uploadLoaderText').innerText = 'Preparando archivo...';
       loader.classList.add('active');
       uploadBtn.disabled = true;
 
       const isVideo = file.type.includes('video');
-      const storagePath = `portanko/global/${Date.now()}_${file.name}`;
-      const storageRef = storage.ref(storagePath);
 
       try {
         // Para videos, medimos su duración real (localmente, antes de subir) para que
         // el dashboard semanal pueda sumar minutos reales desde el primer momento.
         const measuredDurationSeconds = isVideo ? await measureLocalVideoDuration(file) : null;
 
-        const snapshot = await storageRef.put(file);
+        // Para imágenes, comprimimos/redimensionamos localmente antes de subir
+        // (evita gastar espacio con fotos de celular sin sentido para una TV).
+        const fileToUpload = isVideo ? file : await compressImageFile(file);
+
+        document.getElementById('uploadLoaderText').innerText = 'Subiendo archivo al repositorio corporativo...';
+        const storagePath = `portanko/global/${Date.now()}_${fileToUpload.name}`;
+        const storageRef = storage.ref(storagePath);
+        const snapshot = await storageRef.put(fileToUpload);
         const downloadURL = await snapshot.ref.getDownloadURL();
 
         const newMedia = {
@@ -1222,6 +1367,7 @@
           rotation: parseInt(document.getElementById('itemRotationSelect').value) || 0,
           fit: document.getElementById('itemFitSelect').value || 'cover',
           badgeText: document.getElementById('badgeSelect').value || null,
+          kenBurns: !isVideo && !!document.getElementById('kenBurnsCheckbox')?.checked,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -1287,17 +1433,35 @@
     }
 
     function logout() {
-      sessionStorage.removeItem("portanko_auth");
-      window.location.href = "login.html";
+      auth.signOut().finally(() => { window.location.href = "login.html"; });
     }
 
     /* =========================================================
-       INICIO
+       INICIO — se registra al final del script (con todo ya definido)
+       y solo arranca el panel una vez confirmado el login.
+       IMPORTANTE: esto por sí solo NO asegura la base de datos — hace falta
+       además configurar las Reglas de Seguridad de Firestore/Storage para
+       exigir "request.auth != null" en escritura (y lectura si corresponde).
+       Ver instrucciones al final de la respuesta del chat.
        ========================================================= */
-    renderDaysBar();
-    listenAllTVs();
-    listenGlobalRepository();
-    loadTVConfig();
+    function startApp() {
+      if (appStarted) return; // evita doble arranque si Firebase Auth dispara el evento más de una vez
+      appStarted = true;
+      renderDaysBar();
+      listenAllTVs();
+      listenGlobalRepository();
+      loadTVConfig();
+      // Refresca los puntos de estado ("hace X min") aunque no llegue data nueva de Firestore.
+      setInterval(renderTVBar, 60000);
+    }
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "login.html";
+      } else {
+        startApp();
+      }
+    });
   </script>
 </body>
 </html>
