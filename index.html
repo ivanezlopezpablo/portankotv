@@ -336,13 +336,17 @@
     /** Calcula el playlist correspondiente al día de hoy, con retrocompatibilidad */
     function resolvePlaylistForToday(data) {
       const today = getCurrentDayName();
+      let list;
       if (data.schedule && Array.isArray(data.schedule[today])) {
-        return data.schedule[today];
+        list = data.schedule[today];
+      } else if (Array.isArray(data.playlist)) {
+        list = data.playlist; // retrocompatibilidad con documentos sin "schedule"
+      } else {
+        list = [];
       }
-      if (Array.isArray(data.playlist)) {
-        return data.playlist; // retrocompatibilidad con documentos sin "schedule"
-      }
-      return [];
+      // Los ítems desactivados desde el admin (active === false) se guardan
+      // igual en Firestore para no perder su configuración, pero no se muestran.
+      return list.filter(item => item.active !== false);
     }
 
     /** Precarga silenciosa del próximo ítem para evitar parpadeos/pantallas negras */
