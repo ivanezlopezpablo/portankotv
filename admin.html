@@ -2,14 +2,14 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard Multi-TV Profesional - Portanko Motion Graphics</title>
+  <title>Dashboard Multi-TV Profesional - Portanko Enterprise</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <style>
     :root {
       --bg: #090d16;
-      --card: rgba(15, 23, 42, 0.85);
+      --card: rgba(15, 23, 42, 0.88);
       --accent: #991b1b;
       --accent-hover: #7f1d1d;
       --text: #f8fafc;
@@ -42,23 +42,8 @@
       stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-
     .motion-gear { animation: rotateMotion 12s linear infinite; }
     @keyframes rotateMotion { 100% { transform: rotate(360deg); } }
-
-    .flaticon-copy-btn:hover .motion-copy { animation: copyPulse 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes copyPulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.3) rotate(-10deg); stroke: #ef4444; }
-      100% { transform: scale(1); }
-    }
-
-    .info-btn-motion {
-      display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
-      border-radius: 50%; background: rgba(56, 189, 248, 0.1); color: var(--cyan); border: 1px solid var(--cyan);
-      cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s ease;
-    }
-    .info-btn-motion:hover { transform: scale(1.15) rotate(15deg); box-shadow: 0 0 12px var(--cyan); }
 
     .btn-add-tv {
       background: #1d4ed8; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold;
@@ -73,7 +58,7 @@
       border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .tv-btn-wrapper:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 20px -3px rgba(153, 27, 27, 0.4); }
+    .tv-btn-wrapper:hover { border-color: var(--accent); transform: translateY(-3px); }
     .tv-btn-wrapper.active { border-color: #ef4444; box-shadow: 0 0 20px rgba(153, 27, 27, 0.7); background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%); }
 
     .tv-btn { background: transparent; border: none; color: var(--text); padding: 10px 14px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
@@ -84,30 +69,36 @@
     }
     .flaticon-copy-btn:hover { background: var(--cyan); color: #020617; }
 
-    .main-grid { display: grid; grid-template-columns: 1fr 600px; gap: 24px; }
+    /* Sistema de Pestañas de Días de la Semana */
+    .days-bar { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+    .day-tab {
+      background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); color: #93c5fd;
+      padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+    .day-tab:hover { background: #1e3a8a; color: #fff; }
+    .day-tab.active { background: var(--accent); border-color: #ef4444; color: #fff; box-shadow: 0 0 12px rgba(153, 27, 27, 0.6); }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 560px; gap: 24px; }
     .section-card { background: var(--card); backdrop-filter: blur(12px); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
     .section-title { color: #fca5a5; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 
     .form-row { display: flex; gap: 16px; margin-bottom: 14px; align-items: center; }
     label { font-size: 11px; text-transform: uppercase; color: #93c5fd; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
     input, select, textarea { background: rgba(2, 6, 23, 0.8); border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; width: 100%; font-size: 13px; }
-    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 8px rgba(153, 27, 27, 0.5); }
 
     .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(153, 27, 27, 0.4); }
-    .btn-action:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-action:hover { background: var(--accent-hover); }
 
-    .canva-guide-card {
-      background: linear-gradient(135deg, rgba(30, 58, 138, 0.25) 0%, rgba(153, 27, 27, 0.2) 100%);
-      border: 1px solid #3b82f6; border-radius: 10px; padding: 18px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    }
-    .canva-guide-card h4 { color: #93c5fd; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; letter-spacing: 1px; }
-    .canva-guide-list { font-size: 12px; color: #e2e8f0; line-height: 1.7; }
-    .canva-guide-list strong { color: #fca5a5; }
+    /* Repositorio Nube Interna Grid */
+    .repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; padding: 4px; border: 1px solid var(--border); border-radius: 6px; background: rgba(2,6,23,0.5); }
+    .repo-item { position: relative; border: 2px solid var(--border); border-radius: 6px; overflow: hidden; cursor: pointer; height: 80px; transition: all 0.2s; }
+    .repo-item:hover { border-color: var(--accent); transform: scale(1.03); }
+    .repo-item img, .repo-item video { width: 100%; height: 100%; object-fit: cover; }
+    .repo-item.selected { border-color: #22c55e; box-shadow: 0 0 10px rgba(34, 197, 94, 0.6); }
 
-    #copyToast {
-      position: fixed; bottom: 20px; right: 20px; background: #1d4ed8; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 13px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(20px); display: flex; align-items: center; gap: 10px; border: 1px solid #3b82f6;
-    }
-    #copyToast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .playlist-item { display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.7); padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
+    .playlist-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
 
     #uploadLoader {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -116,26 +107,22 @@
       opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
     }
     #uploadLoader.active { opacity: 1; pointer-events: auto; }
-    .loader-spinner {
-      width: 65px; height: 65px; border: 4px solid rgba(153, 27, 27, 0.2);
-      border-top: 4px solid #ef4444; border-radius: 50%;
-      animation: spinLoader 0.8s linear infinite; margin-bottom: 16px;
-    }
+    .loader-spinner { width: 65px; height: 65px; border: 4px solid rgba(153, 27, 27, 0.2); border-top: 4px solid #ef4444; border-radius: 50%; animation: spinLoader 0.8s linear infinite; margin-bottom: 16px; }
     @keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .loader-text { color: #fca5a5; font-size: 15px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
 
-    .preview-stage { width: 100%; height: 750px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); box-shadow: inset 0 0 20px rgba(0,0,0,0.9); }
+    .preview-stage { width: 100%; height: 650px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
     .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 3px solid #1e3a8a; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 35px rgba(30, 58, 138, 0.5); }
     
-    .preview-screen.orient-0.size-32 { width: 440px; height: 247px; }
-    .preview-screen.orient-0.size-40 { width: 480px; height: 270px; }
-    .preview-screen.orient-0.size-43 { width: 520px; height: 292px; }
-    .preview-screen.orient-0.size-50 { width: 560px; height: 315px; }
+    .preview-screen.orient-0.size-32 { width: 400px; height: 225px; }
+    .preview-screen.orient-0.size-40 { width: 440px; height: 247px; }
+    .preview-screen.orient-0.size-43 { width: 480px; height: 270px; }
+    .preview-screen.orient-0.size-50 { width: 520px; height: 292px; }
 
-    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 247px; height: 440px; }
-    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 270px; height: 480px; }
-    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 292px; height: 520px; }
-    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 315px; height: 560px; }
+    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 225px; height: 400px; }
+    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 247px; height: 440px; }
+    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 270px; height: 480px; }
+    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 292px; height: 520px; }
 
     .media-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; overflow: hidden; }
     .media-wrapper img, .media-wrapper video { width: 100%; height: 100%; transition: transform 0.3s ease, object-fit 0.3s ease; }
@@ -151,25 +138,26 @@
     .draggable-badge { position: absolute; padding: 6px 10px; border-radius: 4px; font-weight: bold; font-size: 11px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
     .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(2, 6, 23, 0.9); color: #fff; font-size: 10px; padding: 8px; text-align: center; z-index: 15; border-top: 1px solid var(--accent); }
 
-    .playlist-item { display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.7); padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
-    .playlist-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
-
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
     .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    .modal-card { background: #0f172a; border: 1px solid var(--accent); border-radius: 12px; width: 100%; max-width: 480px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.9); transform: translateY(-20px); transition: transform 0.25s ease; }
-    .modal-overlay.active .modal-card { transform: translateY(0); }
+    .modal-card { background: #0f172a; border: 1px solid var(--accent); border-radius: 12px; width: 100%; max-width: 480px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.9); }
     .modal-title { color: #fca5a5; font-size: 18px; font-weight: bold; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
     .modal-body { font-size: 14px; color: #cbd5e1; line-height: 1.5; margin-bottom: 24px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
     .btn-modal-cancel { background: #334155; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .btn-modal-confirm { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
     .btn-modal-danger { background: #ef4444; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+    #copyToast {
+      position: fixed; bottom: 20px; right: 20px; background: #1d4ed8; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 13px; z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(20px); display: flex; align-items: center; gap: 10px; border: 1px solid #3b82f6;
+    }
+    #copyToast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <h2>PORTANKO - Control Central Multi-TV</h2>
+    <h2>PORTANKO - Enterprise Control Central</h2>
     <button onclick="logout()" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Cerrar Sesión</button>
   </div>
 
@@ -177,23 +165,91 @@
     <span style="color:#93c5fd; font-size:13px;">Cargando pantallas...</span>
   </div>
 
+  <!-- Selector de Días de la Semana (Subcarpetas de Contenido) -->
+  <div class="days-bar" id="daysContainer">
+    <div class="day-tab active" onclick="selectDay('lunes')">Lunes</div>
+    <div class="day-tab" onclick="selectDay('martes')">Martes</div>
+    <div class="day-tab" onclick="selectDay('miercoles')">Miércoles</div>
+    <div class="day-tab" onclick="selectDay('jueves')">Jueves</div>
+    <div class="day-tab" onclick="selectDay('viernes')">Viernes</div>
+    <div class="day-tab" onclick="selectDay('sabado')">Sábado</div>
+    <div class="day-tab" onclick="selectDay('domingo')">Domingo</div>
+  </div>
+
   <div class="main-grid">
     <div>
-      <div class="canva-guide-card">
-        <h4>
-          <svg class="motion-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-          <span>Guía Definitiva de Dimensiones para Canva (Relación 16:9)</span>
-        </h4>
-        <div class="canva-guide-list">
-          • <strong>TV Vertical (32", 40", 43", 50"):</strong> Crea en Canva con <code>1080 x 1920 px</code> (Plantilla <em>"Historia de Instagram"</em>).<br>
-          • <strong>TV Horizontal (32", 40", 43", 50"):</strong> Crea en Canva con <code>1920 x 1080 px</code> (Plantilla <em>"Presentación 16:9"</em>).<br>
-          • <strong>Calidad Ultra HD (4K):</strong> Usa <code>2160 x 3840 px</code> (Vertical) o <code>3840 x 2160 px</code> (Horizontal).<br>
-          • <strong>Consejo Clave:</strong> Mantén los textos principales alejados $50\text{ px}$ de los bordes externos.
+      <div class="section-card">
+        <h3 class="section-title">
+          <span id="subfolderTitle">Gestión de Contenido: Lunes</span>
+          <span style="font-size:11px; color:#38bdf8;" id="statsCounter">0 ítems cargados</span>
+        </h3>
+        
+        <!-- Repositorio Interno de Medios (Nube) -->
+        <div style="margin-bottom: 16px;">
+          <label>Nube Interna (Selecciona un archivo ya subido para añadirlo a este día)</label>
+          <div class="repo-grid" id="repoGrid">
+            <span style="color:#64748b; font-size:11px; padding:10px;">Cargando repositorio...</span>
+          </div>
+          <button class="btn-action" style="background:#1d4ed8; margin-top:8px;" onclick="addSelectedFromRepo()">Añadir ítem seleccionado al día actual</button>
         </div>
+
+        <hr style="border-color:var(--border); margin: 20px 0;">
+
+        <!-- Subida de Nuevo Archivo al Servidor -->
+        <div class="form-row">
+          <div style="flex: 2;">
+            <label>Título / Referencia</label>
+            <input type="text" id="itemTitle" placeholder="Ej: Flyer Comercial">
+          </div>
+          <div style="flex: 1;">
+            <label>Insignia</label>
+            <select id="badgeSelect" onchange="updateBadgeText()">
+              <option value="">-- Sin Insignia --</option>
+              <option value="OPORTUNIDAD">OPORTUNIDAD</option>
+              <option value="VENDIDO">VENDIDO</option>
+              <option value="EN ALQUILER">EN ALQUILER</option>
+              <option value="CONSULTA LEGAL">CONSULTA LEGAL</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div style="flex: 1;">
+            <label>Duración (s)</label>
+            <input type="number" id="mediaDuration" value="7" min="1">
+          </div>
+          <div style="flex: 1;">
+            <label>Rotación</label>
+            <select id="itemRotationSelect" onchange="updateSelectedLocalFileTransform()">
+              <option value="0" selected>Normal (0°)</option>
+              <option value="90">Girar 90°</option>
+              <option value="180">Girar 180°</option>
+              <option value="270">Girar 270°</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label>Relleno</label>
+            <select id="itemFitSelect" onchange="updateSelectedLocalFileTransform()">
+              <option value="cover" selected>Cover (Rellenar)</option>
+              <option value="contain">Contain (Entera)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div style="flex: 1;">
+            <label>Archivo Nuevo (Imagen / Video)</label>
+            <input type="file" id="mediaFileInput" accept="image/*,video/mp4" onchange="previewSelectedLocalFile(this)">
+          </div>
+        </div>
+        <button class="btn-action" style="background:#2563eb;" onclick="uploadMedia()">Subir a la Nube & Añadir al Día</button>
       </div>
 
       <div class="section-card">
-        <h3 class="section-title"><span>Ajustes de Pantalla & Música</span></h3>
+        <h3 class="section-title"><span>Secuencia Programada (Reordenar y Métricas)</span></h3>
+        <div id="playlistContainer"><p style="color:#93c5fd;">Cargando programación...</p></div>
+      </div>
+
+      <div class="section-card">
+        <h3 class="section-title"><span>Ajustes de Pantalla & Música General</span></h3>
         <div class="form-row">
           <div style="flex: 1;">
             <label>Orientación TV</label>
@@ -212,96 +268,8 @@
               <option value="50" selected>50 Pulgadas</option>
             </select>
           </div>
-          <div style="flex: 1;">
-            <label>Música de Fondo</label>
-            <select id="audioEnabled">
-              <option value="true">Activado</option>
-              <option value="false">Silenciado</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 3;">
-            <label>URL del Archivo MP3</label>
-            <input type="text" id="audioUrl" placeholder="https://firebasestorage.googleapis.com/...">
-          </div>
-          <div style="flex: 1;">
-            <label>Volumen</label>
-            <input type="number" id="audioVolume" step="0.1" min="0" max="1" value="0.5">
-          </div>
         </div>
         <button class="btn-action" onclick="requestSaveTVConfig()">Guardar Ajustes de TV</button>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title"><span>Subir Nuevo Contenido (Imagen / Video)</span></h3>
-        <div class="form-row">
-          <div style="flex: 2;">
-            <label>Título / Referencia (Opcional)</label>
-            <input type="text" id="itemTitle" placeholder="Ej: Video Institucional o Flyer">
-          </div>
-          <div style="flex: 1;">
-            <label>Insignia (Opcional)</label>
-            <select id="badgeSelect" onchange="updateBadgeText()">
-              <option value="">-- Sin Insignia --</option>
-              <option value="OPORTUNIDAD">OPORTUNIDAD</option>
-              <option value="VENDIDO">VENDIDO</option>
-              <option value="EN ALQUILER">EN ALQUILER</option>
-              <option value="CONSULTA LEGAL">CONSULTA LEGAL</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label>Duración Imagen (s)</label>
-            <input type="number" id="mediaDuration" value="7" min="1">
-          </div>
-          <div style="flex: 1;">
-            <label>Rotación Imagen</label>
-            <select id="itemRotationSelect" onchange="updateSelectedLocalFileTransform()">
-              <option value="0" selected>Normal (0°)</option>
-              <option value="90">Girar 90°</option>
-              <option value="180">Girar 180°</option>
-              <option value="270">Girar 270°</option>
-            </select>
-          </div>
-          <div style="flex: 1;">
-            <label>Modo de Relleno</label>
-            <select id="itemFitSelect" onchange="updateSelectedLocalFileTransform()">
-              <option value="cover" selected>Rellenar Pantalla (Cover)</option>
-              <option value="contain">Ajustar Entera (Contain)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label>Archivo Multimedia (Imagen / MP4)</label>
-            <input type="file" id="mediaFileInput" accept="image/*,video/mp4" onchange="previewSelectedLocalFile(this)">
-          </div>
-        </div>
-        <button class="btn-action" style="background:#2563eb;" onclick="uploadMedia()">Subir e Integrar a esta TV</button>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title"><span>Banner Legal / Ticker Inferior</span></h3>
-        <div class="form-row">
-          <div style="flex: 3;">
-            <label>Texto Informativo</label>
-            <input type="text" id="legalBannerText" placeholder="Portanko Abogados e Inmobiliaria" oninput="updateBannerPreview()">
-          </div>
-          <div style="flex: 1;">
-            <label>Mostrar Banner</label>
-            <select id="showLegalBanner" onchange="updateBannerPreview()">
-              <option value="true">Sí</option>
-              <option value="false">No</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title"><span>Secuencia de Reproducción (Reordenar elementos)</span></h3>
-        <div id="playlistContainer"><p style="color:#93c5fd;">Cargando...</p></div>
       </div>
     </div>
 
@@ -324,7 +292,7 @@
 
   <div id="uploadLoader">
     <div class="loader-spinner"></div>
-    <div class="loader-text">Subiendo archivo multimedia al servidor...</div>
+    <div class="loader-text">Subiendo archivo al repositorio corporativo...</div>
   </div>
 
   <div id="copyToast">
@@ -334,11 +302,11 @@
 
   <div id="customModal" class="modal-overlay">
     <div class="modal-card">
-      <div id="modalTitle" class="modal-title">Confirmación Requerida</div>
-      <div id="modalBody" class="modal-body">¿Está seguro de realizar esta acción en el sistema?</div>
+      <div id="modalTitle" class="modal-title">Confirmación</div>
+      <div id="modalBody" class="modal-body">¿Desea continuar?</div>
       <div class="modal-actions" id="modalActions">
         <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-        <button id="modalConfirmBtn" class="btn-modal-confirm">Confirmar</button>
+        <button class="btn-modal-confirm" id="modalConfirmBtn">Confirmar</button>
       </div>
     </div>
   </div>
@@ -362,7 +330,9 @@
     const storage = firebase.storage();
 
     let currentTV = "tv1";
-    let tvPlaylist = [];
+    let currentDay = "lunes";
+    let tvData = {};
+    let selectedRepoUrl = null;
 
     function copyTVUrl(tvId) {
       const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
@@ -376,23 +346,12 @@
 
     function closeModal() { document.getElementById('customModal').classList.remove('active'); }
 
-    function showInfoModal(title, text) {
-      document.getElementById('modalTitle').innerText = title;
-      document.getElementById('modalBody').innerText = text;
-      document.getElementById('modalActions').innerHTML = `<button class="btn-modal-confirm" onclick="closeModal()">Entendido</button>`;
-      document.getElementById('customModal').classList.add('active');
-    }
-
-    function showConfirmModal(title, text, onConfirmAction, isDanger = false) {
-      document.getElementById('modalTitle').innerText = title;
-      document.getElementById('modalBody').innerText = text;
-      const confirmBtnClass = isDanger ? 'btn-modal-danger' : 'btn-modal-confirm';
-      document.getElementById('modalActions').innerHTML = `
-        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="${confirmBtnClass}" id="execConfirmBtn">Confirmar Cambio</button>
-      `;
-      document.getElementById('execConfirmBtn').onclick = () => { closeModal(); onConfirmAction(); };
-      document.getElementById('customModal').classList.add('active');
+    function selectDay(day) {
+      currentDay = day;
+      document.querySelectorAll('.day-tab').forEach(tab => tab.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('subfolderTitle').innerText = `Gestión de Contenido: ${day.toUpperCase()}`;
+      renderPlaylistAndRepo();
     }
 
     function updateSelectedLocalFileTransform() {
@@ -409,13 +368,10 @@
     function previewSelectedLocalFile(input) {
       const file = input.files[0];
       if (!file) return;
-
       const screen = document.getElementById('previewScreen');
       const oldWrapper = screen.querySelector('.media-wrapper');
       if (oldWrapper) oldWrapper.remove();
-
-      const placeholder = document.getElementById('previewPlaceholder');
-      if (placeholder) placeholder.style.display = 'none';
+      document.getElementById('previewPlaceholder').style.display = 'none';
 
       const rot = document.getElementById('itemRotationSelect').value || "0";
       const fit = document.getElementById('itemFitSelect').value || "cover";
@@ -426,14 +382,11 @@
 
       if (file.type.includes('video')) {
         const video = document.createElement('video');
-        video.src = fileURL;
-        video.className = `fit-${fit}`;
-        video.autoplay = true; video.muted = true; video.loop = true;
+        video.src = fileURL; video.className = `fit-${fit}`; video.autoplay = true; video.muted = true; video.loop = true;
         wrapper.appendChild(video);
       } else {
         const img = document.createElement('img');
-        img.src = fileURL;
-        img.className = `fit-${fit}`;
+        img.src = fileURL; img.className = `fit-${fit}`;
         wrapper.appendChild(img);
       }
       screen.appendChild(wrapper);
@@ -467,41 +420,10 @@
         }
         const addBtn = document.createElement('button');
         addBtn.className = 'btn-add-tv';
-        addBtn.innerHTML = `
-          <svg class="motion-icon motion-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          <span>Agregar Nueva TV</span>
-        `;
+        addBtn.innerHTML = `<svg class="motion-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Nueva TV</span>`;
         addBtn.onclick = addNewTV;
         tvContainer.appendChild(addBtn);
       });
-    }
-
-    function showTVActions(tvId, tvName) {
-      document.getElementById('modalTitle').innerText = `GESTIÓN DE TV: ${tvName}`;
-      const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
-      const tvUrl = `${baseUrl}?tv=${tvId}`;
-      document.getElementById('modalBody').innerHTML = `
-        <p style="margin-bottom:12px;"><strong>URL del Televisor:</strong></p>
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-          <input type="text" value="${tvUrl}" readonly onclick="this.select()">
-          <button style="background:#38bdf8; color:#020617; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="copyTVUrl('${tvId}')">Copiar</button>
-        </div>
-        <p>¿Deseas eliminar permanentemente este televisor?</p>
-      `;
-      document.getElementById('modalActions').innerHTML = `
-        <button class="btn-modal-cancel" onclick="closeModal()">Cerrar</button>
-        <button class="btn-modal-danger" onclick="requestDeleteTV('${tvId}')">Eliminar TV</button>
-      `;
-      document.getElementById('customModal').classList.add('active');
-    }
-
-    function requestDeleteTV(tvId) {
-      closeModal();
-      showConfirmModal('RECONFIRMACIÓN DE SEGURIDAD', `¿Desea eliminar definitivamente el televisor '${tvId}'?`, async () => {
-        await db.collection('portanko_tvs').doc(tvId).delete();
-        currentTV = 'tv1';
-        loadTVConfig();
-      }, true);
     }
 
     function selectTV(tvId) { currentTV = tvId; loadTVConfig(); }
@@ -509,25 +431,11 @@
     function loadTVConfig() {
       db.collection('portanko_tvs').doc(currentTV).onSnapshot(doc => {
         if (doc.exists) {
-          const data = doc.data();
-          document.getElementById('orientationSelect').value = data.orientation || 270;
-          if (data.tvSize) document.getElementById('sizeSelect').value = data.tvSize;
+          tvData = doc.data();
+          document.getElementById('orientationSelect').value = tvData.orientation || 270;
+          document.getElementById('sizeSelect').value = tvData.tvSize || "50";
           updatePreviewOrientation();
-
-          if (data.audioSettings) {
-            document.getElementById('audioEnabled').value = data.audioSettings.enabled ? "true" : "false";
-            document.getElementById('audioUrl').value = data.audioSettings.audioUrl || "";
-            document.getElementById('audioVolume').value = data.audioSettings.volume || 0.5;
-          }
-
-          if (data.legalBanner) {
-            document.getElementById('legalBannerText').value = data.legalBanner.text || "";
-            document.getElementById('showLegalBanner').value = data.legalBanner.show ? "true" : "false";
-            updateBannerPreview();
-          }
-
-          tvPlaylist = data.playlist || [];
-          renderPlaylist();
+          renderPlaylistAndRepo();
         }
       });
     }
@@ -535,51 +443,68 @@
     function updatePreviewOrientation() {
       const orient = document.getElementById('orientationSelect').value;
       const size = document.getElementById('sizeSelect').value;
-      const screen = document.getElementById('previewScreen');
-      const badge = document.getElementById('tvSizeBadge');
-      screen.className = `preview-screen orient-${orient} size-${size}`;
-      badge.innerText = `${size}" Pulgadas Simulación`;
+      document.getElementById('previewScreen').className = `preview-screen orient-${orient} size-${size}`;
+      document.getElementById('tvSizeBadge').innerText = `${size}" Pulgadas Simulación`;
     }
 
-    function updateBadgeText() {
-      const badgeVal = document.getElementById('badgeSelect').value;
-      const badgePreview = document.getElementById('badgePreview');
-      if(badgeVal) { badgePreview.innerText = badgeVal; badgePreview.style.display = 'block'; }
-      else { badgePreview.style.display = 'none'; }
-    }
+    function renderPlaylistAndRepo() {
+      // 1. Renderizar Repositorio (Nube Interna - Todos los archivos únicos usados en cualquier día o repositorio global)
+      const repoGrid = document.getElementById('repoGrid');
+      repoGrid.innerHTML = "";
+      
+      // Recopilar todos los archivos existentes en la TV (o repositorio general)
+      let allFilesRepo = tvData.repository || [];
+      // Retrocompatibilidad si la estructura antigua usaba 'playlist' directo
+      if (allFilesRepo.length === 0 && tvData.playlist) {
+        allFilesRepo = tvData.playlist;
+      }
 
-    function updateBannerPreview() {
-      const text = document.getElementById('legalBannerText').value;
-      const show = document.getElementById('showLegalBanner').value === "true";
-      const banner = document.getElementById('legalBannerPreview');
-      banner.innerText = text;
-      banner.style.display = show ? "block" : "none";
-    }
+      if (allFilesRepo.length === 0) {
+        repoGrid.innerHTML = '<span style="color:#64748b; font-size:11px; padding:10px;">La nube interna está vacía. Sube archivos nuevos.</span>';
+      } else {
+        allFilesRepo.forEach((item, idx) => {
+          const div = document.createElement('div');
+          div.className = `repo-item ${selectedRepoUrl === item.url ? 'selected' : ''}`;
+          div.innerHTML = `<img src="${item.url}" onerror="this.src='https://via.placeholder.com/80?text=Video'">`;
+          div.onclick = () => {
+            selectedRepoUrl = item.url;
+            // precargar título y datos si se desea
+            document.getElementById('itemTitle').value = item.title || "";
+            renderPlaylistAndRepo();
+          };
+          repoGrid.appendChild(div);
+        });
+      }
 
-    function renderPlaylist() {
+      // 2. Renderizar Playlist del Día Actual (Subcarpeta)
       const container = document.getElementById('playlistContainer');
       container.innerHTML = "";
-      if (tvPlaylist.length === 0) {
-        container.innerHTML = '<p style="color:#93c5fd;">Sin contenidos en esta TV.</p>';
+
+      if (!tvData.schedule) tvData.schedule = {};
+      const dayPlaylist = tvData.schedule[currentDay] || [];
+
+      document.getElementById('statsCounter').innerText = `${dayPlaylist.length} ítems en este día`;
+
+      if (dayPlaylist.length === 0) {
+        container.innerHTML = `<p style="color:#93c5fd; font-size:13px;">No hay contenido programado para el día **${currentDay.toUpperCase()}**.</p>`;
         return;
       }
 
-      tvPlaylist.forEach((item, index) => {
+      dayPlaylist.forEach((item, index) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'playlist-item';
         itemDiv.innerHTML = `
           <div style="display:flex; align-items:center;">
             <img src="${item.url}" class="playlist-thumb" style="transform: rotate(${item.rotation || 0}deg)" onerror="this.src='https://via.placeholder.com/45?text=Video'">
             <div>
-              <strong style="font-size:12px; display:block;">${index + 1}. ${item.title || 'Slide ' + (index+1)}</strong>
-              <small style="color:#93c5fd;">${item.type === 'video' ? 'Video MP4' : item.duration + 's'} | Girado: ${item.rotation || 0}° | Modo: ${item.fit || 'cover'}</small>
+              <strong style="font-size:12px; display:block;">#${index + 1} - ${item.title || 'Slide ' + (index+1)}</strong>
+              <small style="color:#93c5fd;">Tipo: ${item.type} | Duración: ${item.type === 'video' ? 'Video' : item.duration + 's'} | Girado: ${item.rotation || 0}°</small>
             </div>
           </div>
           <div style="display:flex; gap:4px; align-items:center;">
-            <button style="background:#1e3a8a; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.4; cursor:default;"' : ''} title="Subir orden">↑</button>
-            <button style="background:#1e3a8a; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="moveItem(${index}, 1)" ${index === tvPlaylist.length - 1 ? 'disabled style="opacity:0.4; cursor:default;"' : ''} title="Bajar orden">↓</button>
-            <button style="background:#991b1b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="openEditModal(${index})">Editar</button>
-            <button style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="requestDeleteItem(${index})">X</button>
+            <button style="background:#1e3a8a; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled style="opacity:0.4;"' : ''}>↑</button>
+            <button style="background:#1e3a8a; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="moveItem(${index}, 1)" ${index === dayPlaylist.length - 1 ? 'disabled style="opacity:0.4;"' : ''}>↓</button>
+            <button style="background:#991b1b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="removeItemFromDay(${index})">X</button>
           </div>
         `;
         container.appendChild(itemDiv);
@@ -587,75 +512,42 @@
     }
 
     async function moveItem(index, direction) {
+      if (!tvData.schedule) tvData.schedule = {};
+      const dayPlaylist = tvData.schedule[currentDay] || [];
       const newIndex = index + direction;
-      if (newIndex < 0 || newIndex >= tvPlaylist.length) return;
-      const movedItem = tvPlaylist.splice(index, 1)[0];
-      tvPlaylist.splice(newIndex, 0, movedItem);
-      await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
+      if (newIndex < 0 || newIndex >= dayPlaylist.length) return;
+      const moved = dayPlaylist.splice(index, 1)[0];
+      dayPlaylist.splice(newIndex, 0, moved);
+      tvData.schedule[currentDay] = dayPlaylist;
+      await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
     }
 
-    function openEditModal(index) {
-      const item = tvPlaylist[index];
-      document.getElementById('modalTitle').innerText = "EDITAR PROPIEDADES DE SLIDE";
-      document.getElementById('modalBody').innerHTML = `
-        <div style="margin-bottom:12px;">
-          <label>Título / Referencia</label>
-          <input type="text" id="editTitle" value="${item.title || ''}">
-        </div>
-        <div style="margin-bottom:12px;">
-          <label>Duración en Segundos</label>
-          <input type="number" id="editDuration" value="${item.duration || 7}" min="1" ${item.type === 'video' ? 'disabled' : ''}>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label>Rotación de Imagen</label>
-          <select id="editRotation">
-            <option value="0" ${item.rotation === 0 ? 'selected' : ''}>Normal (0°)</option>
-            <option value="90" ${item.rotation === 90 ? 'selected' : ''}>Girar 90°</option>
-            <option value="180" ${item.rotation === 180 ? 'selected' : ''}>Girar 180°</option>
-            <option value="270" ${item.rotation === 270 ? 'selected' : ''}>Girar 270°</option>
-          </select>
-        </div>
-        <div>
-          <label>Modo de Relleno</label>
-          <select id="editFit">
-            <option value="cover" ${(item.fit || 'cover') === 'cover' ? 'selected' : ''}>Rellenar Pantalla (Cover)</option>
-            <option value="contain" ${item.fit === 'contain' ? 'selected' : ''}>Ajustar Entera (Contain)</option>
-          </select>
-        </div>
-      `;
-      document.getElementById('modalActions').innerHTML = `
-        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="btn-modal-confirm" onclick="saveEditedSlide(${index})">Guardar Cambios</button>
-      `;
-      document.getElementById('customModal').classList.add('active');
+    async function removeItemFromDay(index) {
+      if (!tvData.schedule) tvData.schedule = {};
+      const dayPlaylist = tvData.schedule[currentDay] || [];
+      dayPlaylist.splice(index, 1);
+      tvData.schedule[currentDay] = dayPlaylist;
+      await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
     }
 
-    async function saveEditedSlide(index) {
-      const newTitle = document.getElementById('editTitle').value;
-      const newDuration = parseInt(document.getElementById('editDuration').value) || 7;
-      const newRotation = parseInt(document.getElementById('editRotation').value) || 0;
-      const newFit = document.getElementById('editFit').value;
+    async function addSelectedFromRepo() {
+      if (!selectedRepoUrl) return alert("Selecciona un archivo de la nube interna primero.");
+      let allFilesRepo = tvData.repository || [];
+      const repoItem = allFilesRepo.find(x => x.url === selectedRepoUrl);
+      if (!repoItem) return alert("Archivo no encontrado en repositorio.");
 
-      tvPlaylist[index].title = newTitle;
-      tvPlaylist[index].duration = newDuration;
-      tvPlaylist[index].rotation = newRotation;
-      tvPlaylist[index].fit = newFit;
+      if (!tvData.schedule) tvData.schedule = {};
+      if (!tvData.schedule[currentDay]) tvData.schedule[currentDay] = [];
 
-      closeModal();
-      await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
-    }
-
-    function requestDeleteItem(index) {
-      showConfirmModal('CONFIRMAR ELIMINACIÓN', `¿Desea eliminar el slide seleccionado?`, async () => {
-        tvPlaylist.splice(index, 1);
-        await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
-      }, true);
+      tvData.schedule[currentDay].push({ ...repoItem });
+      await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
+      alert(`Archivo añadido exitosamente a la subcarpeta del **${currentDay.toUpperCase()}**`);
     }
 
     async function uploadMedia() {
       const fileInput = document.getElementById('mediaFileInput');
       const file = fileInput.files[0];
-      if (!file) return alert("Selecciona una imagen o video.");
+      if (!file) return alert("Selecciona una imagen o video para subir.");
 
       const loader = document.getElementById('uploadLoader');
       loader.classList.add('active');
@@ -671,14 +563,23 @@
           title: document.getElementById('itemTitle').value || file.name,
           url: downloadURL,
           type: isVideo ? 'video' : 'image',
-          duration: isVideo ? null : parseInt(document.getElementById('mediaDuration').value),
+          duration: isVideo ? null : parseInt(document.getElementById('mediaDuration').value) || 7,
           rotation: parseInt(document.getElementById('itemRotationSelect').value) || 0,
-          fit: document.getElementById('itemFitSelect').value || 'cover',
-          badgeText: document.getElementById('badgeSelect').value || null
+          fit: document.getElementById('itemFitSelect').value || 'cover'
         };
 
-        tvPlaylist.push(newItem);
-        await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
+        if (!tvData.repository) tvData.repository = [];
+        tvData.repository.push(newItem);
+
+        if (!tvData.schedule) tvData.schedule = {};
+        if (!tvData.schedule[currentDay]) tvData.schedule[currentDay] = [];
+        tvData.schedule[currentDay].push(newItem);
+
+        await db.collection('portanko_tvs').doc(currentTV).set({
+          repository: tvData.repository,
+          schedule: tvData.schedule
+        }, { merge: true });
+
         fileInput.value = "";
         document.getElementById('itemTitle').value = "";
       } catch (err) {
@@ -690,47 +591,27 @@
     }
 
     async function addNewTV() {
-      const tvName = prompt("Nombre de la nueva TV (ej. TV 2 - Recepción):");
+      const tvName = prompt("Nombre de la nueva TV (ej. TV 3 - Vidriera Principal):");
       if (!tvName) return;
       const tvId = tvName.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
       const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
-      const tvUrl = `${baseUrl}?tv=${tvId}`;
 
-      showConfirmModal('CONFIRMAR CREACIÓN', `¿Desea dar de alta la pantalla '${tvName}'?`, async () => {
-        await db.collection('portanko_tvs').doc(tvId).set({
-          name: tvName, orientation: 270, tvSize: "50",
-          audioSettings: { enabled: true, audioUrl: "", volume: 0.5 },
-          legalBanner: { text: "Portanko Abogados e Inmobiliaria", show: true },
-          playlist: []
-        });
-        copyTVUrl(tvId);
-        showInfoModal('URL DE TV COPIADA', `La URL ha sido copiada al portapapeles:\n\n${tvUrl}`);
-        selectTV(tvId);
+      await db.collection('portanko_tvs').doc(tvId).set({
+        name: tvName, orientation: 270, tvSize: "50",
+        repository: [], schedule: { lunes: [], martes: [], miercoles: [], jueves: [], viernes: [], sabado: [], domingo: [] }
       });
+      copyTVUrl(tvId);
+      selectTV(tvId);
     }
 
-    function requestSaveTVConfig() {
-      showConfirmModal('GUARDAR AJUSTES', `¿Desea guardar la configuración general de ${currentTV}?`, async () => {
-        const orientation = parseInt(document.getElementById('orientationSelect').value);
-        const tvSize = document.getElementById('sizeSelect').value;
-        const enabled = document.getElementById('audioEnabled').value === "true";
-        const audioUrl = document.getElementById('audioUrl').value;
-        const volume = parseFloat(document.getElementById('audioVolume').value);
-        const bannerText = document.getElementById('legalBannerText').value;
-        const showBanner = document.getElementById('showLegalBanner').value === "true";
-
-        await db.collection('portanko_tvs').doc(currentTV).set({
-          orientation, tvSize,
-          audioSettings: { enabled, audioUrl, volume },
-          legalBanner: { text: bannerText, show: showBanner }
-        }, { merge: true });
-      });
+    async function requestSaveTVConfig() {
+      const orientation = parseInt(document.getElementById('orientationSelect').value);
+      const tvSize = document.getElementById('sizeSelect').value;
+      await db.collection('portanko_tvs').doc(currentTV).set({ orientation, tvSize }, { merge: true });
+      alert("Ajustes generales guardados con éxito.");
     }
 
-    function logout() {
-      sessionStorage.removeItem("portanko_auth");
-      window.location.href = "login.html";
-    }
+    function logout() { sessionStorage.removeItem("portanko_auth"); window.location.href = "login.html"; }
 
     listenAllTVs();
     loadTVConfig();
