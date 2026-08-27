@@ -113,8 +113,8 @@
 
     .flaticon-copy-btn:hover { background: var(--cyan); color: #0f172a; }
 
-    /* Layout Ajustado con Mayor Espacio para Vista Previa */
-    .main-grid { display: grid; grid-template-columns: 1fr 520px; gap: 24px; }
+    /* Layout Principal Ampliado */
+    .main-grid { display: grid; grid-template-columns: 1fr 600px; gap: 24px; }
     .section-card { background: var(--card); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
     .section-title { color: var(--accent); font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 
@@ -148,39 +148,41 @@
 
     #copyToast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
 
-    /* Contenedor y TV Simulada Ampliados */
-    .preview-stage { width: 100%; height: 620px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
-    .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 2px solid #475569; display: flex; justify-content: center; align-items: center; }
+    /* Stage de Vista Previa Gigante */
+    .preview-stage { width: 100%; height: 750px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
+    .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 3px solid #475569; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px rgba(0,0,0,0.9); }
     
-    /* Dimensiones Escaladas para Proyectar Mejor el Contenido */
-    .preview-screen.orient-0.size-32 { width: 360px; height: 202px; }
-    .preview-screen.orient-0.size-40 { width: 400px; height: 225px; }
-    .preview-screen.orient-0.size-43 { width: 440px; height: 247px; }
-    .preview-screen.orient-0.size-50 { width: 480px; height: 270px; }
+    /* Dimensiones Escaladas Gigantes */
+    .preview-screen.orient-0.size-32 { width: 440px; height: 247px; }
+    .preview-screen.orient-0.size-40 { width: 480px; height: 270px; }
+    .preview-screen.orient-0.size-43 { width: 520px; height: 292px; }
+    .preview-screen.orient-0.size-50 { width: 560px; height: 315px; }
 
-    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 280px; height: 157px; }
-    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 330px; height: 185px; }
-    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 370px; height: 208px; }
-    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 410px; height: 230px; }
+    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 340px; height: 191px; }
+    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 400px; height: 225px; }
+    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 450px; height: 253px; }
+    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 510px; height: 286px; }
 
     .preview-screen.orient-90 { transform: rotate(90deg); }
     .preview-screen.orient-270 { transform: rotate(270deg); }
 
-    /* Renderizado sin recortes (contain) */
+    /* Modos de Relleno CSS (Cover / Contain) */
     .preview-screen img.bg-media, .preview-screen video.bg-media {
       max-width: 100%;
       max-height: 100%;
       width: 100%;
       height: 100%;
-      object-fit: contain !important;
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       margin: auto;
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease, object-fit 0.3s ease;
     }
 
-    .draggable-badge { position: absolute; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
-    .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.85); color: #fff; font-size: 9px; padding: 6px; text-align: center; z-index: 15; }
+    .bg-media.fit-cover { object-fit: cover !important; }
+    .bg-media.fit-contain { object-fit: contain !important; }
+
+    .draggable-badge { position: absolute; padding: 6px 10px; border-radius: 4px; font-weight: bold; font-size: 11px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
+    .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.85); color: #fff; font-size: 10px; padding: 8px; text-align: center; z-index: 15; }
 
     .playlist-item { display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
     .playlist-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 10px; }
@@ -219,12 +221,7 @@
         </h3>
         <div class="form-row">
           <div style="flex: 1;">
-            <label>
-              Orientación TV
-              <span class="info-btn-motion" onclick="showInfoModal('Orientación TV', 'Usar 270° o 90° si el televisor físico está colgado de costado.')">
-                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              </span>
-            </label>
+            <label>Orientación TV</label>
             <select id="orientationSelect" onchange="updatePreviewOrientation()">
               <option value="0">Horizontal (0°)</option>
               <option value="90">Vertical Derecha (90°)</option>
@@ -232,17 +229,12 @@
             </select>
           </div>
           <div style="flex: 1;">
-            <label>
-              Pulgadas TV
-              <span class="info-btn-motion" onclick="showInfoModal('Tamaño de TV', 'Simula la escala visual en pantalla física desde 32 pulgadas hasta 50 pulgadas.')">
-                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              </span>
-            </label>
+            <label>Pulgadas TV</label>
             <select id="sizeSelect" onchange="updatePreviewOrientation()">
               <option value="32">32 Pulgadas</option>
               <option value="40">40 Pulgadas</option>
-              <option value="43" selected>43 Pulgadas</option>
-              <option value="50">50 Pulgadas</option>
+              <option value="43">43 Pulgadas</option>
+              <option value="50" selected>50 Pulgadas</option>
             </select>
           </div>
           <div style="flex: 1;">
@@ -269,7 +261,7 @@
       <div class="section-card">
         <h3 class="section-title">
           <span>Subir Nuevo Contenido (Imagen / Video)</span>
-          <span class="info-btn-motion" onclick="showInfoModal('Gestor Multimedia', 'Si la imagen se ve acostada en la TV, usa la opción Rotación Imagen para corregir su orientación independientemente de la TV.')">
+          <span class="info-btn-motion" onclick="showInfoModal('Gestor Multimedia', 'Ajusta la rotación y el modo de relleno para verificar cómo cubre la superficie del televisor.')">
             <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
           </span>
         </h3>
@@ -295,20 +287,29 @@
             <input type="number" id="mediaDuration" value="7" min="1">
           </div>
           <div style="flex: 1;">
-            <label>
-              Rotación Imagen
-              <span class="info-btn-motion" onclick="showInfoModal('Rotación Imagen', 'Permite enderezar una imagen vertical cargada de costado (ej. 90° o 270°).')">
-                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              </span>
-            </label>
-            <select id="itemRotationSelect" onchange="updateSelectedLocalFileRotation()">
+            <label>Rotación Imagen</label>
+            <select id="itemRotationSelect" onchange="updateSelectedLocalFileTransform()">
               <option value="0" selected>Normal (0°)</option>
               <option value="90">Girar 90°</option>
               <option value="180">Girar 180°</option>
               <option value="270">Girar 270°</option>
             </select>
           </div>
-          <div style="flex: 2;">
+          <div style="flex: 1;">
+            <label>
+              Modo de Relleno
+              <span class="info-btn-motion" onclick="showInfoModal('Modo Relleno', 'Elije Rellenar Pantalla para ocupar todo el marco o Ajustar Entera para ver la imagen completa con bordes negros.')">
+                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              </span>
+            </label>
+            <select id="itemFitSelect" onchange="updateSelectedLocalFileTransform()">
+              <option value="cover" selected>Rellenar Pantalla (Cover)</option>
+              <option value="contain">Ajustar Entera (Contain)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div style="flex: 1;">
             <label>Archivo Multimedia (Imagen / MP4)</label>
             <input type="file" id="mediaFileInput" accept="image/*,video/mp4" onchange="previewSelectedLocalFile(this)">
           </div>
@@ -319,9 +320,6 @@
       <div class="section-card">
         <h3 class="section-title">
           <span>Banner Legal / Ticker Inferior</span>
-          <span class="info-btn-motion" onclick="showInfoModal('Banner Legal', 'Muestra un texto deslizable o marquesina fija en la parte inferior.')">
-            <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          </span>
         </h3>
         <div class="form-row">
           <div style="flex: 3;">
@@ -341,24 +339,21 @@
       <div class="section-card">
         <h3 class="section-title">
           <span>Secuencia de Reproducción</span>
-          <span class="info-btn-motion" onclick="showInfoModal('Playlist', 'Listado de contenidos asignados a esta TV.')">
-            <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          </span>
         </h3>
         <div id="playlistContainer"><p style="color:#94a3b8;">Cargando...</p></div>
       </div>
     </div>
 
-    <!-- Vista Previa Ampliada -->
+    <!-- Vista Previa Ampliada con Simulación Realista -->
     <div>
       <div class="section-card" style="position: sticky; top: 24px;">
         <h3 class="section-title">
           <span>Vista Previa Simulación TV</span>
-          <small id="tvSizeBadge" style="font-size:11px; color:#38bdf8; font-weight:bold;">43" (Simulación)</small>
+          <small id="tvSizeBadge" style="font-size:11px; color:#38bdf8; font-weight:bold;">50" (Simulación)</small>
         </h3>
         <div class="preview-stage">
-          <div id="previewScreen" class="preview-screen orient-270 size-43">
-            <span id="previewPlaceholder" style="color:#64748b; font-size:11px; text-align:center; padding:10px;">Selecciona o carga un archivo</span>
+          <div id="previewScreen" class="preview-screen orient-270 size-50">
+            <span id="previewPlaceholder" style="color:#64748b; font-size:12px; text-align:center; padding:10px;">Selecciona o carga un archivo</span>
             <div id="badgePreview" class="draggable-badge" style="top: 10px; left: 10px; background: #d97706; display:none;"></div>
             <div id="legalBannerPreview" class="legal-banner-overlay">Portanko Abogados e Inmobiliaria</div>
           </div>
@@ -436,10 +431,14 @@
       document.getElementById('customModal').classList.add('active');
     }
 
-    function updateSelectedLocalFileRotation() {
+    function updateSelectedLocalFileTransform() {
       const rot = document.getElementById('itemRotationSelect').value;
+      const fit = document.getElementById('itemFitSelect').value;
       const media = document.querySelector('#previewScreen .bg-media');
-      if (media) media.style.transform = `rotate(${rot}deg)`;
+      if (media) {
+        media.style.transform = `rotate(${rot}deg)`;
+        media.className = `bg-media fit-${fit}`;
+      }
     }
 
     function previewSelectedLocalFile(input) {
@@ -454,12 +453,13 @@
       if (placeholder) placeholder.style.display = 'none';
 
       const rot = document.getElementById('itemRotationSelect').value || "0";
+      const fit = document.getElementById('itemFitSelect').value || "cover";
       const fileURL = URL.createObjectURL(file);
 
       if (file.type.includes('video')) {
         const video = document.createElement('video');
         video.src = fileURL;
-        video.className = 'bg-media';
+        video.className = `bg-media fit-${fit}`;
         video.style.transform = `rotate(${rot}deg)`;
         video.autoplay = true;
         video.muted = true;
@@ -468,7 +468,7 @@
       } else {
         const img = document.createElement('img');
         img.src = fileURL;
-        img.className = 'bg-media';
+        img.className = `bg-media fit-${fit}`;
         img.style.transform = `rotate(${rot}deg)`;
         screen.appendChild(img);
       }
@@ -624,7 +624,7 @@
             <img src="${item.url}" class="playlist-thumb" style="transform: rotate(${item.rotation || 0}deg)" onerror="this.src='https://via.placeholder.com/45?text=Video'">
             <div>
               <strong style="font-size:12px; display:block;">${item.title || 'Slide ' + (index+1)}</strong>
-              <small style="color:#94a3b8;">${item.type === 'video' ? 'Video MP4' : item.duration + 's'} | Girado: ${item.rotation || 0}°</small>
+              <small style="color:#94a3b8;">${item.type === 'video' ? 'Video MP4' : item.duration + 's'} | Girado: ${item.rotation || 0}° | Modo: ${item.fit || 'cover'}</small>
             </div>
           </div>
           <div style="display:flex; gap:6px;">
@@ -694,6 +694,7 @@
               type: isVideo ? 'video' : 'image',
               duration: isVideo ? null : parseInt(document.getElementById('mediaDuration').value),
               rotation: parseInt(document.getElementById('itemRotationSelect').value) || 0,
+              fit: document.getElementById('itemFitSelect').value || 'cover',
               badgeText: document.getElementById('badgeSelect').value || null
             };
 
@@ -723,7 +724,7 @@
           await db.collection('portanko_tvs').doc(tvId).set({
             name: tvName,
             orientation: 270,
-            tvSize: "43",
+            tvSize: "50",
             audioSettings: { enabled: true, audioUrl: "", volume: 0.5 },
             legalBanner: { text: "Portanko Abogados e Inmobiliaria", show: true },
             playlist: []
