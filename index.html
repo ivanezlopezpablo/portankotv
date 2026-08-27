@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Vidriera Digital TV - Portanko</title>
+  <title>Vidriera Digital Multi-TV - Portanko</title>
   <style>
     /* Reset y estilos base */
     * {
@@ -21,16 +21,36 @@
       font-family: system-ui, -apple-system, sans-serif;
     }
 
-    /* Pantalla Vertical Rotada 270° */
+    /* Contenedor con soporte de orientación dinámica por TV */
     #slider-container {
       position: absolute;
       top: 50%;
       left: 50%;
+      width: 100vw;
+      height: 100vh;
+      transform: translate(-50%, -50%);
+      transform-origin: center center;
+      z-index: 1;
+      transition: transform 0.5s ease-in-out;
+    }
+
+    /* Orientaciones dinámicas */
+    #slider-container.orientation-270 {
       width: 100vh;
       height: 100vw;
       transform: translate(-50%, -50%) rotate(270deg);
-      transform-origin: center center;
-      z-index: 1;
+    }
+
+    #slider-container.orientation-90 {
+      width: 100vh;
+      height: 100vw;
+      transform: translate(-50%, -50%) rotate(90deg);
+    }
+
+    #slider-container.orientation-0 {
+      width: 100vw;
+      height: 100vh;
+      transform: translate(-50%, -50%) rotate(0deg);
     }
 
     /* Diapositivas multimedia */
@@ -48,14 +68,14 @@
       will-change: opacity, transform;
     }
 
-    /* Estado activo */
+    /* Estado activo de la imagen */
     .slide.active {
       opacity: 1 !important;
       z-index: 10 !important;
       transform: scale(1.05);
     }
 
-    /* Indicador de estado offline */
+    /* Indicador de estado offline / sincronización */
     #status-badge {
       position: absolute;
       top: 20px;
@@ -79,23 +99,24 @@
 </head>
 <body>
 
-  <div id="slider-container"></div>
+  <div id="slider-container" class="orientation-270"></div>
   <div id="status-badge" class="hidden">Modo Offline</div>
 
   <audio id="bg-music" loop preload="auto"></audio>
 
   <script>
-    // ------------------------------------------
-    // CONFIGURACIÓN DE TU REPOSITORIO Y MÚSICA
-    // ------------------------------------------
+    // -------------------------------------------------------------
+    // PARAMETRIZACIÓN MULTI-TV (Se define vía URL: index.html?tv=tv1)
+    // -------------------------------------------------------------
+    const urlParams = new URLSearchParams(window.location.search);
+    const TV_ID = urlParams.get('tv') || 'tv-default';
+
+    // Repositorio y configuración predeterminada
     const GITHUB_USER = "ivanezlopezpablo"; 
     const GITHUB_REPO = "portankotv1"; 
     const FOLDER_PATH = "imagenes"; 
-    const DURACION_IMAGEN_MS = 7000; // 7 segundos por foto
-    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; // Sincroniza fotos cada 5 min
-
-    // URL PÚBLICA DE FIREBASE INTEGRADA
-    const FIREBASE_AUDIO_URL = "https://firebasestorage.googleapis.com/v0/b/digestos-536e1.firebasestorage.app/o/Lumi%20Sin%20Gluten%2FM%C3%BAsica%20Relaxante%20para%20Cl%C3%ADnicas%20Consult%C3%B3rios%20e%20Pilates%20%E2%80%93%20Ambiente%20Calmo%20e%20Profissional.mp3?alt=media&token=ddeae6e0-63d2-4d7f-95c8-14ac0092c2e6";
+    const DURACION_IMAGEN_MS = 7000; 
+    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; 
 
     const container = document.getElementById("slider-container");
     const statusBadge = document.getElementById("status-badge");
@@ -104,25 +125,83 @@
     let mediaItems = [];
     let currentIndex = 0;
     let stepTimeout = null;
+    let currentAudioUrl = "";
 
-    // Configuración del reproductor de audio
-    function initBackgroundAudio() {
-      if (!FIREBASE_AUDIO_URL) return;
+    // -------------------------------------------------------------
+    // GESTIÓN DE MÚSICA DE FONDO DESDE ADMINISTRACIÓN (FIREBASE)
+    // -------------------------------------------------------------
+    function updateBackgroundAudio(audioSettings) {
+      if (!audioSettings || !audioSettings.enabled || !audioSettings.audioUrl) {
+        bgMusic.pause();
+        currentAudioUrl = "";
+        return;
+      }
 
-      bgMusic.src = FIREBASE_AUDIO_URL;
-      bgMusic.volume = 0.5; // Volumen al 50%
+      // Si la URL cambia desde el panel Admin, actualiza y reproduce
+      if (currentAudioUrl !== audioSettings.audioUrl) {
+        currentAudioUrl = audioSettings.audioUrl;
+        bgMusic.src = currentAudioUrl;
+        bgMusic.volume = audioSettings.volume !== undefined ? audioSettings.volume : 0.5;
 
-      const playAudio = () => {
-        bgMusic.play().catch(err => {
-          console.warn("Autoplay bloqueado. Activa 'Allow Autoplay' en Fully Kiosk:", err);
-        });
-      };
-
-      playAudio();
-      document.addEventListener("click", playAudio, { once: true });
+        playAudioWithAutoplayFallback();
+      } else {
+        // Solo actualizar volumen si cambió
+        if (audioSettings.volume !== undefined) {
+          bgMusic.volume = audioSettings.volume;
+        }
+      }
     }
 
-    // Obtener las imágenes desde GitHub
+    function playAudioWithAutoplayFallback() {
+      const promise = bgMusic.play();
+      if (promise !== undefined) {
+        promise.catch(err => {
+          console.warn("Autoplay bloqueado por el navegador. Reintentando tras interacción:", err);
+          // Habilita reproducción al primer clic / toque en pantalla
+          document.addEventListener("click", () => {
+            bgMusic.play();
+          }, { once: true });
+        });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // ESCUCHADOR EN TIEMPO REAL MULTI-TV (FIREBASE FIRESTORE)
+    // -------------------------------------------------------------
+    // Reemplazar con tu inicialización de Firebase Firestore:
+    // db.collection('portanko_tvs').doc(TV_ID).onSnapshot(doc => { ... });
+    function listenTVConfiguration() {
+      // Simulación o integración real con Firestore
+      if (typeof db !== "undefined") {
+        db.collection("portanko_tvs").doc(TV_ID).onSnapshot(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            
+            // 1. Aplicar orientación (0°, 90°, 270°)
+            applyOrientation(data.orientation || 270);
+            
+            // 2. Actualizar configuración de audio
+            updateBackgroundAudio(data.audioSettings);
+          }
+        });
+      } else {
+        // Fallback inicial estático si Firestore aún no está cargado
+        updateBackgroundAudio({
+          enabled: true,
+          audioUrl: "https://firebasestorage.googleapis.com/v0/b/digestos-536e1.firebasestorage.app/o/Lumi%20Sin%20Gluten%2FM%C3%BAsica%20Relaxante%20para%20Cl%C3%ADnicas%20Consult%C3%B3rios%20e%20Pilates%20%E2%80%93%20Ambiente%20Calmo%20e%20Profissional.mp3?alt=media&token=ddeae6e0-63d2-4d7f-95c8-14ac0092c2e6",
+          volume: 0.5
+        });
+      }
+    }
+
+    function applyOrientation(degree) {
+      container.className = "";
+      container.classList.add(`orientation-${degree}`);
+    }
+
+    // -------------------------------------------------------------
+    // CARGA Y REPRODUCCIÓN DE IMÁGENES (GITHUB / PLAYLIST)
+    // -------------------------------------------------------------
     async function fetchMediaFromGitHub() {
       const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FOLDER_PATH}?t=${new Date().getTime()}`;
       
@@ -186,8 +265,10 @@
       playCurrentSlide();
     }
 
-    // Inicialización
-    initBackgroundAudio();
+    // -------------------------------------------------------------
+    // INICIALIZACIÓN DEL SISTEMA
+    // -------------------------------------------------------------
+    listenTVConfiguration();
     fetchMediaFromGitHub();
     setInterval(fetchMediaFromGitHub, REFRESCAR_REPOS_MS);
   </script>
