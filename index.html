@@ -2,644 +2,181 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard Multi-TV Profesional - Portanko</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Vidriera Digital Multi-TV - Portanko</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
   <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
   <style>
-    :root {
-      --bg: #05070d; --card: rgba(12, 17, 30, 0.85); --accent: #b3272d; --accent-hover: #7f1d1d;
-      --text: #eef1f7; --border: #1e2942; --cyan: #38e1d1; --ok: #22c55e;
-    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text); padding: 24px; min-height: 100vh;
-      position: relative;
+    html, body {
+      width: 100vw; height: 100vh;
+      background-color: #000;
+      overflow: hidden; cursor: none;
+      font-family: 'Segoe UI', -apple-system, sans-serif;
     }
 
-    /* ---------- Fondo futurista fijo: grilla + orbes, siempre detrás del contenido ---------- */
-    .bg-void {
-      position: fixed; inset: 0; z-index: -5;
-      background:
-        radial-gradient(ellipse 70% 50% at 15% -10%, rgba(56,225,209,0.08), transparent 55%),
-        radial-gradient(ellipse 60% 45% at 100% 100%, rgba(179,39,45,0.09), transparent 55%),
-        linear-gradient(160deg, #04060c 0%, #0a0f1c 100%);
+    /* ---------- LOADER ---------- */
+    #loader-screen {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #020617;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9999; transition: opacity 0.8s ease, visibility 0.8s;
     }
-    /* Grilla en dos capas con distinta escala/velocidad = sensación de profundidad (paralaje) */
-    .bg-grid { position: fixed; inset: -50px; z-index: -4; opacity: 0.22;
-      background-image:
-        linear-gradient(rgba(56,225,209,0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(56,225,209,0.08) 1px, transparent 1px);
-      background-size: 46px 46px;
-      animation: gridDriftAdmin 32s linear infinite;
+    .brand-loader h1 { color: #fff; font-size: 28px; letter-spacing: 4px; text-transform: uppercase; font-weight: 700; text-align: center; }
+    .brand-loader span { color: #991b1b; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; text-align: center; margin-top: 4px; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(153, 27, 27, 0.2);
+      border-top: 3px solid #ef4444;
+      border-radius: 50%; margin-top: 24px;
+      animation: spin 1s linear infinite;
     }
-    .bg-grid-far { position: fixed; inset: -80px; z-index: -5; opacity: 0.12;
-      background-image:
-        linear-gradient(rgba(179,39,45,0.10) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(179,39,45,0.10) 1px, transparent 1px);
-      background-size: 130px 130px;
-      animation: gridDriftAdminFar 55s linear infinite reverse;
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* Contenedor de la animación Lottie del spinner. Oculto por defecto: si Lottie
+       carga bien se muestra y se oculta el spinner CSS; si falla, el CSS queda visible. */
+    #lottie-loader { width: 90px; height: 90px; margin-top: 12px; display: none; }
+    #lottie-empty { width: 110px; height: 110px; margin: 0 auto 12px; }
+
+    /* Mensaje de "sin contenido" para poder diagnosticar en el local sin abrir consola */
+    #empty-state {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #020617; color: #94a3b8;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9998; text-align: center; padding: 24px; font-size: 16px;
     }
-    @keyframes gridDriftAdmin { from { background-position: 0 0, 0 0; } to { background-position: 46px 92px, 46px 92px; } }
-    @keyframes gridDriftAdminFar { from { background-position: 0 0, 0 0; } to { background-position: 130px 65px, 130px 65px; } }
+    #empty-state h2 { color: #fff; font-size: 20px; margin-bottom: 8px; }
 
-    .bg-orb { position: fixed; z-index: -3; border-radius: 50%; filter: blur(90px); pointer-events: none; }
-    .bg-orb--a { width: 480px; height: 480px; top: -160px; left: -120px; background: radial-gradient(circle, rgba(56,225,209,0.10), transparent 70%); animation: orbFloatAdminA 30s ease-in-out infinite; }
-    .bg-orb--b { width: 420px; height: 420px; bottom: -140px; right: -100px; background: radial-gradient(circle, rgba(179,39,45,0.10), transparent 70%); animation: orbFloatAdminB 34s ease-in-out infinite; }
-    .bg-orb--c { width: 300px; height: 300px; top: 40%; right: 15%; background: radial-gradient(circle, rgba(56,225,209,0.06), transparent 70%); animation: orbFloatAdminC 24s ease-in-out infinite; }
-    @keyframes orbFloatAdminA { 0%,100% { transform: translate(0,0); } 50% { transform: translate(70px,50px); } }
-    @keyframes orbFloatAdminB { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-60px,-40px); } }
-    @keyframes orbFloatAdminC { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-40px,30px) scale(1.15); } }
-
-    /* Barrido horizontal muy sutil, tipo radar de vigilancia — refuerza el tema "control central" */
-    .bg-scan-admin {
-      position: fixed; left: 0; right: 0; height: 220px; z-index: -2;
-      background: linear-gradient(180deg, transparent, rgba(56,225,209,0.035), transparent);
-      animation: scanSweepAdmin 14s linear infinite;
-      pointer-events: none;
+    /* ---------- CONTENEDOR / ORIENTACIÓN ---------- */
+    #slider-container {
+      position: absolute; top: 50%; left: 50%;
+      width: 100vw; height: 100vh;
+      transform: translate(-50%, -50%);
+      transform-origin: center center;
+      z-index: 1; background: #000; overflow: hidden;
+      display: flex; justify-content: center; align-items: center;
     }
-    @keyframes scanSweepAdmin { 0% { top: -220px; } 100% { top: 100vh; } }
+    #slider-container.orientation-270 { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(270deg); }
+    #slider-container.orientation-90  { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); }
+    #slider-container.orientation-180 { width: 100vw; height: 100vh; transform: translate(-50%, -50%) rotate(180deg); }
+    #slider-container.orientation-0   { width: 100vw; height: 100vh; transform: translate(-50%, -50%) rotate(0deg); }
 
-    @media (prefers-reduced-motion: reduce) { .bg-grid, .bg-grid-far, .bg-orb, .bg-scan-admin { animation: none !important; } }
-
-    .header { position: relative; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding: 16px; margin-bottom: 24px; background: rgba(2, 6, 23, 0.6); border-radius: 8px; backdrop-filter: blur(10px); }
-    .header::before, .header::after {
-      content: ''; position: absolute; top: -1px; width: 22px; height: 10px;
-      border-top: 2px solid var(--cyan); opacity: 0.7;
+    /* ---------- SLIDES ---------- */
+    /* Capa externa: solo posiciona/recorta. La ANIMACIÓN en sí (fade, slide,
+       zoom, etc.) se agrega como una clase fx-* intercambiable — ver bloque
+       "EFECTOS DE TRANSICIÓN" más abajo. Nunca lleva rotación, para no
+       pisarse con .rot-X (que vive en la capa interna .media-rotator). */
+    .media-wrapper {
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto;
+      width: 100%; height: 100%;
+      z-index: 1; overflow: hidden;
+      will-change: opacity, transform;
     }
-    .header::before { left: -1px; border-left: 2px solid var(--cyan); border-top-left-radius: 6px; }
-    .header::after { right: -1px; border-right: 2px solid var(--cyan); border-top-right-radius: 6px; }
-    .header h2 { font-size: 18px; letter-spacing: 0.5px; }
+    .media-wrapper.active { z-index: 10 !important; }
 
-    .motion-icon { width: 20px; height: 20px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .motion-gear { animation: rotateMotion 12s linear infinite; }
-    @keyframes rotateMotion { 100% { transform: rotate(360deg); } }
-    .flaticon-copy-btn:hover .motion-copy { animation: copyPulse 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes copyPulse { 0% { transform: scale(1); } 50% { transform: scale(1.3) rotate(-10deg); stroke: #ef4444; } 100% { transform: scale(1); } }
+    /* Capa interna: SOLO controla la rotación manual del ítem (rot-0/90/180/270).
+       Al vivir en un elemento distinto del fx, ambas transiciones conviven. */
+    .media-rotator { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; }
+    .media-rotator img, .media-rotator video { width: 100%; height: 100%; display: block; }
 
-    .btn-add-tv { background: #1d4ed8; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; gap: 8px; }
-    .btn-add-tv:hover { background: #1e40af; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); }
-
-    .tv-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-    .tv-btn-wrapper { display: flex; align-items: center; background: var(--card); border: 2px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .tv-btn-wrapper:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 20px -3px rgba(153, 27, 27, 0.4); }
-    .tv-btn-wrapper.active { border-color: #ef4444; box-shadow: 0 0 20px rgba(153, 27, 27, 0.7); background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%); }
-    .tv-btn { background: transparent; border: none; color: var(--text); padding: 10px 14px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-
-    /* Punto de estado: "en vivo" (verde) parpadea con un anillo tipo radar;
-       idle (amarillo) y offline (rojo/gris) quedan fijos, sin animación. */
-    .tv-status-dot { position: relative; width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-    .tv-status-dot.status-live::before {
-      content: ''; position: absolute; inset: -6px; border-radius: 50%;
-      border: 1.5px solid currentColor; opacity: 0.7;
-      animation: dotPing 1.8s cubic-bezier(0,0,0.2,1) infinite;
-    }
-    @keyframes dotPing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.1); opacity: 0; } }
-
-    /* Insignia de alerta: aparece SOLO cuando una TV está offline/nunca se conectó */
-    .tv-alert-badge {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 15px; height: 15px; border-radius: 50%; background: #ef4444; color: #fff;
-      font-size: 10px; font-weight: 800; flex-shrink: 0; cursor: default;
-      animation: alertPulse 1.7s ease-in-out infinite;
-    }
-    @keyframes alertPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
-
-    .flaticon-copy-btn { background: rgba(15, 23, 42, 0.8); border: none; border-left: 1px solid var(--border); color: var(--cyan); padding: 10px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-    .flaticon-copy-btn:hover { background: var(--cyan); color: #020617; }
-
-    .days-bar { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
-    .day-tab { background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); color: #93c5fd; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase; transition: all 0.2s ease; }
-    .day-tab:hover { background: #1e3a8a; color: #fff; }
-    .day-tab.active { background: var(--accent); border-color: #ef4444; color: #fff; box-shadow: 0 0 12px rgba(153, 27, 27, 0.6); }
-
-    /* Mini dashboard semanal */
-    .dash-scroll { overflow-x: auto; }
-    .dash-header-row { display: grid; grid-template-columns: 120px 90px 1fr 130px 80px; gap: 10px; padding: 0 12px 6px; font-size: 10px; text-transform: uppercase; color: #64748b; letter-spacing: 0.5px; min-width: 560px; }
-    .dash-row { display: grid; grid-template-columns: 120px 90px 1fr 130px 80px; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(2,6,23,0.5); margin-bottom: 6px; cursor: pointer; transition: all 0.15s; font-size: 12px; min-width: 560px; }
-    .dash-row:hover { border-color: var(--accent); background: rgba(153,27,27,0.12); }
-    .dash-row.active { border-color: #ef4444; background: linear-gradient(135deg, rgba(153,27,27,0.25) 0%, rgba(127,29,29,0.15) 100%); }
-    .dash-day { font-weight: 700; text-transform: uppercase; color: #fca5a5; }
-    .dash-metric { color: #cbd5e1; }
-    .dash-metric small { color: #64748b; }
-    .dash-go { background: #1e3a8a; color: #fff; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; justify-self: end; }
-    .dash-go:hover { background: #2563eb; }
-
-    .main-grid { display: grid; grid-template-columns: 1fr 560px; gap: 24px; }
-    .section-card { background: var(--card); backdrop-filter: blur(12px); padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); }
-    .section-title { color: #fca5a5; font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
-    .section-subtitle { font-size: 11px; color: #93c5fd; text-transform: none; letter-spacing: 0; margin-bottom: 12px; }
-
-    .form-row { display: flex; gap: 16px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
-    label { font-size: 11px; text-transform: uppercase; color: #93c5fd; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
-    input, select, textarea { background: rgba(2, 6, 23, 0.8); border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; width: 100%; font-size: 13px; }
-    input:focus, select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 8px rgba(153, 27, 27, 0.5); }
-
-    .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(153, 27, 27, 0.4); }
-    .btn-action:hover { background: var(--accent-hover); transform: translateY(-1px); }
-    .btn-action:disabled { opacity: 0.5; cursor: default; transform: none; }
-    .btn-action.blue { background: #2563eb; box-shadow: 0 4px 12px rgba(37,99,235,0.4); }
-    .btn-action.blue:hover { background: #1d4ed8; }
-
-    .canva-guide-card { background: linear-gradient(135deg, rgba(30, 58, 138, 0.25) 0%, rgba(153, 27, 27, 0.2) 100%); border: 1px solid #3b82f6; border-radius: 10px; padding: 18px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
-    .canva-guide-card h4 { color: #93c5fd; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; letter-spacing: 1px; }
-    .canva-guide-list { font-size: 12px; color: #e2e8f0; line-height: 1.7; }
-    .canva-guide-list strong { color: #fca5a5; }
-
-    /* Repositorio GLOBAL */
-    .repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; max-height: 320px; overflow-y: auto; padding: 4px; border: 1px solid var(--border); border-radius: 6px; background: rgba(2,6,23,0.5); }
-    .repo-item { position: relative; border: 2px solid var(--border); border-radius: 6px; overflow: hidden; cursor: pointer; height: 88px; transition: all 0.2s; }
-    .repo-item:hover { border-color: var(--accent); transform: scale(1.03); }
-    .repo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .repo-item .repo-del { position: absolute; top: 2px; right: 2px; background: rgba(153,27,27,0.9); color:#fff; border:none; width:18px; height:18px; border-radius:3px; font-size:11px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index: 2; }
-    .repo-item .repo-tag { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(2,6,23,0.85); font-size: 9px; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .repo-item .repo-plus { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(2,6,23,0.6); color:#fff; width: 26px; height: 26px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 16px; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
-    .repo-item:hover .repo-plus { opacity: 1; }
-    .repo-empty { color:#64748b; font-size:11px; padding:10px; grid-column: 1 / -1; }
-
-    /* Lista de programación con drag & drop */
-    .playlist-item { display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.7); padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); cursor: default; transition: opacity 0.15s, outline 0.1s; }
-    .playlist-item.dragging { opacity: 0.35; }
-    .playlist-item.drag-over { outline: 2px dashed var(--ok); outline-offset: -2px; }
-    .drag-handle { cursor: grab; color: #64748b; font-size: 16px; margin-right: 10px; user-select: none; flex-shrink: 0; }
-    .drag-handle:active { cursor: grabbing; }
-    .order-badge { background: #1e3a8a; color: #fff; font-size: 11px; font-weight: bold; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 8px; flex-shrink: 0; }
-    .playlist-thumb { width: 45px; height: 45px; object-fit: cover; border-radius: 4px; margin-right: 10px; flex-shrink: 0; }
-    .pl-btn { background:#1e3a8a; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size: 12px; }
-    .pl-btn:disabled { opacity:0.35; cursor:default; }
-    .pl-btn.edit { background:#991b1b; }
-    .pl-btn.del { background:#ef4444; }
-
-    .audio-track-item { display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.7); padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); gap: 10px; }
-    .audio-play-btn { width: 32px; height: 32px; border-radius: 50%; border: none; background: #1e3a8a; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 12px; transition: background 0.15s; }
-    .audio-play-btn:hover { background: #2563eb; }
-    .audio-play-btn.playing { background: var(--ok); color: #04140c; animation: audioPlayingPulse 1.4s ease-in-out infinite; }
-    @keyframes audioPlayingPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.5); } 50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } }
-    .pl-btn.toggle-on { background: var(--ok); color: #04140c; font-weight: 700; }
-    .pl-btn.toggle-off { background: transparent; border: 1px solid var(--border); color: var(--muted, #64748b); }
-    .playlist-item.item-inactive { opacity: 0.5; }
-    .inactive-tag { color: #64748b; font-style: italic; }
-
-    #uploadLoader { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 6, 23, 0.9); backdrop-filter: blur(10px); z-index: 20000; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-    #uploadLoader.active { opacity: 1; pointer-events: auto; }
-    .loader-spinner { width: 65px; height: 65px; border: 4px solid rgba(153, 27, 27, 0.2); border-top: 4px solid #ef4444; border-radius: 50%; animation: spinLoader 0.8s linear infinite; margin-bottom: 16px; }
-    @keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    .loader-text { color: #fca5a5; font-size: 15px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
-    #lottie-upload-loader { width: 110px; height: 110px; display: none; }
-    #lottie-toast-success { width: 26px; height: 26px; display: none; flex-shrink: 0; }
-    .toast-icon-error { width: 20px; height: 20px; flex-shrink: 0; color: #fecaca; }
-
-    .preview-stage { width: 100%; height: 700px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); box-shadow: inset 0 0 20px rgba(0,0,0,0.9); }
-    .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 3px solid #1e3a8a; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 35px rgba(30, 58, 138, 0.5); }
-
-    /* Mini vista previa de transición: mismas clases fx-* y mismos tiempos que
-       usa el reproductor real, para que lo que se ve acá sea 1:1 con la TV. */
-    .preview-stage-mini { position: relative; width: 100%; height: 150px; border-radius: 8px; overflow: hidden; background: #000; border: 1px solid var(--border); margin-bottom: 14px; }
-    .preview-wrapper {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      color: #fff; font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;
-      z-index: 1;
-    }
-    .preview-wrapper.active { z-index: 10 !important; }
-    .fx-fade { opacity: 0; transition: opacity 1.6s ease-in-out; }
-    .fx-fade.active { opacity: 1 !important; }
-    .fx-fadezoom { opacity: 0; transform: scale(1.045); transition: opacity 1.6s ease-in-out, transform 1.8s cubic-bezier(0.22,1,0.36,1); }
-    .fx-fadezoom.active { opacity: 1 !important; transform: scale(1) !important; }
-    .fx-slide-left { opacity: 1; transform: translateX(100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
-    .fx-slide-left.active { transform: translateX(0) !important; }
-    .fx-slide-right { opacity: 1; transform: translateX(-100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
-    .fx-slide-right.active { transform: translateX(0) !important; }
-    .fx-slide-up { opacity: 1; transform: translateY(100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
-    .fx-slide-up.active { transform: translateY(0) !important; }
-    .fx-zoom { opacity: 0; transform: scale(0.82); transition: opacity 0.9s ease-out, transform 0.9s cubic-bezier(0.34,1.56,0.64,1); }
-    .fx-zoom.active { opacity: 1 !important; transform: scale(1) !important; }
-    .fx-none { opacity: 0; transition: opacity 0.05s linear; }
-    .fx-none.active { opacity: 1 !important; }
-
-    .preview-screen.orient-0.size-32 { width: 420px; height: 236px; }
-    .preview-screen.orient-0.size-40 { width: 460px; height: 259px; }
-    .preview-screen.orient-0.size-43 { width: 500px; height: 281px; }
-    .preview-screen.orient-0.size-50 { width: 540px; height: 304px; }
-    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 236px; height: 420px; }
-    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 259px; height: 460px; }
-    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 281px; height: 500px; }
-    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 304px; height: 540px; }
-    .preview-screen.orient-180.size-32 { width: 420px; height: 236px; }
-    .preview-screen.orient-180.size-40 { width: 460px; height: 259px; }
-    .preview-screen.orient-180.size-43 { width: 500px; height: 281px; }
-    .preview-screen.orient-180.size-50 { width: 540px; height: 304px; }
-
-    .media-wrapper { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; overflow: hidden; }
-    .media-wrapper img, .media-wrapper video { width: 100%; height: 100%; transition: transform 0.3s ease, object-fit 0.3s ease; }
-    .fit-cover { object-fit: cover !important; }
+    .fit-cover   { object-fit: cover !important; }
     .fit-contain { object-fit: contain !important; }
-    .rot-0 { transform: rotate(0deg); }
-    .rot-90 { transform: rotate(90deg); width: 100vh !important; height: 100vw !important; }
+
+    .rot-0   { transform: rotate(0deg); }
+    .rot-90  { transform: rotate(90deg);  width: 100vh !important; height: 100vw !important; }
     .rot-180 { transform: rotate(180deg); }
     .rot-270 { transform: rotate(270deg); width: 100vh !important; height: 100vw !important; }
 
-    .draggable-badge { position: absolute; top: 10px; left: 10px; padding: 6px 10px; border-radius: 4px; font-weight: bold; font-size: 11px; color: #fff; background: #991b1b; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); display: none; }
-    .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(2, 6, 23, 0.9); color: #fff; font-size: 10px; padding: 8px; text-align: center; z-index: 15; border-top: 1px solid var(--accent); }
+    /* ---------- EFECTOS DE TRANSICIÓN (fx-*) ----------
+       Cada efecto define su estado inicial + transición; ".active" define el
+       estado final. Se aplican como clase adicional sobre .media-wrapper,
+       elegida desde el admin. Estas mismas clases (mismos nombres, mismos
+       tiempos) se replican en el admin para la vista previa en vivo. */
+    .fx-fade { opacity: 0; transition: opacity 1.6s ease-in-out; }
+    .fx-fade.active { opacity: 1 !important; }
 
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(8px); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; }
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    .modal-card { background: #0f172a; border: 1px solid var(--accent); border-radius: 12px; width: 100%; max-width: 540px; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.9); transform: translateY(-20px); transition: transform 0.25s ease; max-height: 85vh; overflow-y: auto; }
-    .modal-overlay.active .modal-card { transform: translateY(0); }
-    .modal-title { color: #fca5a5; font-size: 18px; font-weight: bold; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
-    .modal-body { font-size: 14px; color: #cbd5e1; line-height: 1.5; margin-bottom: 24px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
-    .btn-modal-cancel { background: #334155; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .btn-modal-confirm { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .btn-modal-danger { background: #ef4444; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .checkbox-scroll { max-height: 170px; overflow-y: auto; padding-right: 4px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; background: rgba(2,6,23,0.5); }
-    .checkbox-scroll label { display: flex; align-items: center; gap: 8px; font-size: 12px; text-transform: none; color: #e2e8f0; margin-bottom: 8px; }
-    .checkbox-scroll input[type="checkbox"] { width: auto; }
+    .fx-fadezoom { opacity: 0; transform: scale(1.045); transition: opacity 1.6s ease-in-out, transform 1.8s cubic-bezier(0.22,1,0.36,1); }
+    .fx-fadezoom.active { opacity: 1 !important; transform: scale(1) !important; }
 
-    #copyToast { position: fixed; bottom: 20px; right: 20px; background: #1d4ed8; color: #fff; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 13px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 10000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateY(20px); display: flex; align-items: center; gap: 10px; border: 1px solid #3b82f6; }
-    #copyToast.show { opacity: 1; pointer-events: auto; transform: translateY(0); }
-    #copyToast.error { background: #991b1b; border-color: #ef4444; }
+    .fx-slide-left { opacity: 1; transform: translateX(100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
+    .fx-slide-left.active { transform: translateX(0) !important; }
+
+    .fx-slide-right { opacity: 1; transform: translateX(-100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
+    .fx-slide-right.active { transform: translateX(0) !important; }
+
+    .fx-slide-up { opacity: 1; transform: translateY(100%); transition: transform 1s cubic-bezier(0.65,0,0.35,1); }
+    .fx-slide-up.active { transform: translateY(0) !important; }
+
+    .fx-zoom { opacity: 0; transform: scale(0.82); transition: opacity 0.9s ease-out, transform 0.9s cubic-bezier(0.34,1.56,0.64,1); }
+    .fx-zoom.active { opacity: 1 !important; transform: scale(1) !important; }
+
+    .fx-none { opacity: 0; transition: opacity 0.05s linear; }
+    .fx-none.active { opacity: 1 !important; }
+
+    /* ---------- INSIGNIA DE CONTENIDO (OPORTUNIDAD / VENDIDO / etc.) ---------- */
+    #content-badge {
+      position: absolute; top: 24px; left: 24px;
+      background: #991b1b; color: #fff;
+      padding: 10px 18px; border-radius: 6px;
+      font-weight: bold; font-size: 22px; letter-spacing: 1px;
+      z-index: 50; box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+      transition: opacity 0.4s ease;
+    }
+
+    /* ---------- EFECTO KEN BURNS (acercamiento suave opcional por imagen) ---------- */
+    @keyframes kenBurnsZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
+    .ken-burns { animation-name: kenBurnsZoom; animation-timing-function: linear; animation-fill-mode: forwards; }
+
+    /* ---------- BANNER LEGAL ---------- */
+    #legal-banner {
+      position: absolute; bottom: 0; left: 0; width: 100%;
+      background: rgba(15, 23, 42, 0.9); color: #f8fafc;
+      font-size: 14px; padding: 10px; text-align: center;
+      z-index: 100; letter-spacing: 1px;
+      border-top: 1px solid rgba(153, 27, 27, 0.5); backdrop-filter: blur(8px);
+    }
+
+    /* ---------- BADGE DE ESTADO ---------- */
+    #status-badge {
+      position: absolute; top: 20px; right: 20px;
+      background: rgba(153, 27, 27, 0.9); color: #fff;
+      padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .hidden { opacity: 0 !important; pointer-events: none !important; }
+    .removed { display: none !important; }
   </style>
 </head>
 <body>
 
-  <div class="bg-void"></div>
-  <div class="bg-grid-far"></div>
-  <div class="bg-grid"></div>
-  <div class="bg-orb bg-orb--a"></div>
-  <div class="bg-orb bg-orb--b"></div>
-  <div class="bg-orb bg-orb--c"></div>
-  <div class="bg-scan-admin"></div>
-
-  <div class="header">
-    <h2>PORTANKO - Control Central Multi-TV</h2>
-    <button onclick="logout()" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Cerrar Sesión</button>
-  </div>
-
-  <div class="tv-bar" id="tvContainer">
-    <span style="color:#93c5fd; font-size:13px;">Cargando pantallas...</span>
-  </div>
-
-  <div class="section-card">
-    <h3 class="section-title">
-      <span>Resumen de la Semana — <span id="dashTvName">TV activa</span></span>
-      <small style="font-size:11px; color:#38bdf8;" id="dashWeekTotal">Cargando...</small>
-    </h3>
-    <p class="section-subtitle">Tocá cualquier día (o "Ir →") para saltar directo a su programación.</p>
-    <div class="dash-scroll">
-      <div class="dash-header-row">
-        <span>Día</span><span>Ítems</span><span>Imágenes / Videos</span><span>Duración total</span><span></span>
-      </div>
-      <div id="weekDashboard"><p style="color:#93c5fd; font-size:12px;">Cargando resumen...</p></div>
+  <div id="loader-screen">
+    <div class="brand-loader">
+      <h1>PORTANKO</h1>
+      <span>Abogados e Inmobiliaria</span>
     </div>
+    <div class="spinner" id="css-spinner-fallback"></div>
+    <div id="lottie-loader"></div>
   </div>
 
-  <div class="days-bar" id="daysContainer"></div>
-
-  <div class="main-grid">
-    <div>
-      <div class="canva-guide-card">
-        <h4>
-          <svg class="motion-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-          <span>Guía Definitiva de Dimensiones para Canva (Relación 16:9)</span>
-        </h4>
-        <div class="canva-guide-list">
-          • <strong>TV Vertical:</strong> Crea en Canva con <code>1080 x 1920 px</code> (Plantilla "Historia de Instagram").<br>
-          • <strong>TV Horizontal:</strong> Crea en Canva con <code>1920 x 1080 px</code> (Plantilla "Presentación 16:9").<br>
-          • <strong>Calidad Ultra HD (4K):</strong> <code>2160 x 3840 px</code> (Vertical) o <code>3840 x 2160 px</code> (Horizontal).<br>
-          • <strong>Consejo Clave:</strong> Mantén los textos principales alejados 50px de los bordes externos.
-        </div>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title"><span>Pantalla, Música y Banner Legal — TV activa</span></h3>
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label>Orientación TV</label>
-            <select id="orientationSelect" onchange="updatePreviewOrientation()">
-              <option value="0">Horizontal (0°)</option>
-              <option value="90">Vertical Derecha (90°)</option>
-              <option value="180">Horizontal Invertida (180°)</option>
-              <option value="270" selected>Vertical Invertida (270°)</option>
-            </select>
-          </div>
-          <div style="flex: 1;">
-            <label>Pulgadas TV</label>
-            <select id="sizeSelect" onchange="updatePreviewOrientation()">
-              <option value="32">32 Pulgadas</option>
-              <option value="40">40 Pulgadas</option>
-              <option value="43">43 Pulgadas</option>
-              <option value="50" selected>50 Pulgadas</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label>Música de Fondo</label>
-            <select id="audioEnabled">
-              <option value="true">Activado</option>
-              <option value="false" selected>Silenciado</option>
-            </select>
-          </div>
-          <div style="flex: 2;">
-            <label>URL del Archivo MP3</label>
-            <input type="text" id="audioUrl" placeholder="https://firebasestorage.googleapis.com/...">
-          </div>
-          <div style="flex: 1;">
-            <label>Volumen (0 a 1)</label>
-            <input type="number" id="audioVolume" step="0.1" min="0" max="1" value="0.5">
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 3;">
-            <label>Texto del Banner Inferior</label>
-            <input type="text" id="legalBannerText" placeholder="Portanko Abogados e Inmobiliaria" oninput="updateBannerPreview()">
-          </div>
-          <div style="flex: 1;">
-            <label>Mostrar Banner</label>
-            <select id="showLegalBanner" onchange="updateBannerPreview()">
-              <option value="true" selected>Sí</option>
-              <option value="false">No</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn-action" onclick="requestSaveTVConfig()">Guardar Ajustes de esta TV</button>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title">
-          <span>Música de Fondo — Nube Interna</span>
-          <small style="font-size:11px; color:#38bdf8;" id="audioRepoCounter">0 pistas</small>
-        </h3>
-        <p class="section-subtitle">Subí un MP3 una sola vez y reutilizalo en cualquier TV. Tocá ▶ para escucharlo antes de asignarlo.</p>
-        <div class="form-row">
-          <div style="flex: 2;">
-            <label>Título</label>
-            <input type="text" id="audioTrackTitle" placeholder="Ej: Instrumental Recepción">
-          </div>
-          <div style="flex: 1;">
-            <label>Archivo MP3</label>
-            <input type="file" id="audioTrackFileInput" accept="audio/mpeg,audio/mp3,audio/*">
-          </div>
-        </div>
-        <button class="btn-action blue" onclick="uploadAudioTrack()" id="uploadAudioBtn">Subir Música</button>
-        <div id="audioTrackList" style="margin-top:14px;"><p style="color:#93c5fd; font-size:12px;">Cargando pistas...</p></div>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title"><span>Transición entre Contenidos — TV activa</span></h3>
-        <p class="section-subtitle">Se aplica por igual a imágenes y videos. Cambiá el efecto para ver la vista previa en vivo.</p>
-        <div class="form-row">
-          <div style="flex:1;">
-            <label>Efecto</label>
-            <select id="transitionEffectSelect" onchange="startTransitionPreview()">
-              <option value="fade">Desvanecimiento (Fade)</option>
-              <option value="fadezoom">Desvanecimiento + Acercamiento</option>
-              <option value="slide-left">Deslizar desde la derecha</option>
-              <option value="slide-right">Deslizar desde la izquierda</option>
-              <option value="slide-up">Deslizar desde abajo</option>
-              <option value="zoom">Aparecer con Zoom</option>
-              <option value="none">Sin transición (corte directo)</option>
-            </select>
-          </div>
-        </div>
-        <div class="preview-stage-mini" id="transitionPreviewStage"></div>
-        <button class="btn-action" onclick="requestSaveTransitionEffect()">Guardar Efecto de Transición</button>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title"><span>Seguridad de Acceso — Palabra Clave del Equipo</span></h3>
-        <p class="section-subtitle">Además de usuario y contraseña, el login pide esta palabra clave compartida. Cambiarla acá actualiza el acceso para todo el equipo al instante.</p>
-        <div class="form-row">
-          <div style="flex:3;">
-            <label>Palabra Clave Actual</label>
-            <input type="text" id="accessKeywordInput" placeholder="Cargando...">
-          </div>
-        </div>
-        <button class="btn-action" onclick="requestSaveKeyword()">Guardar Palabra Clave</button>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title">
-          <span>Nube Interna Compartida (todas las TVs)</span>
-          <small style="font-size:11px; color:#38bdf8;" id="repoCounter">0 archivos</small>
-        </h3>
-        <p class="section-subtitle">Tocá un archivo para elegir en qué pantallas y qué días se muestra.</p>
-        <input type="text" id="repoSearch" placeholder="Buscar por título..." oninput="renderRepository()" style="margin-bottom:10px;">
-        <div class="repo-grid" id="repoGrid"><div class="repo-empty">Cargando repositorio...</div></div>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title"><span>Subir Nuevo Contenido a la Nube (Imagen / Video)</span></h3>
-        <div class="form-row">
-          <div style="flex: 2;">
-            <label>Título / Referencia</label>
-            <input type="text" id="itemTitle" placeholder="Ej: Video Institucional o Flyer">
-          </div>
-          <div style="flex: 1;">
-            <label>Insignia (Opcional)</label>
-            <select id="badgeSelect" onchange="updateBadgeText()">
-              <option value="">-- Sin Insignia --</option>
-              <option value="OPORTUNIDAD">OPORTUNIDAD</option>
-              <option value="VENDIDO">VENDIDO</option>
-              <option value="EN ALQUILER">EN ALQUILER</option>
-              <option value="CONSULTA LEGAL">CONSULTA LEGAL</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label>Duración Imagen (s)</label>
-            <input type="number" id="mediaDuration" value="7" min="1">
-          </div>
-          <div style="flex: 1;">
-            <label>Rotación</label>
-            <select id="itemRotationSelect" onchange="updateSelectedLocalFileTransform()">
-              <option value="0" selected>Normal (0°)</option>
-              <option value="90">Girar 90°</option>
-              <option value="180">Girar 180°</option>
-              <option value="270">Girar 270°</option>
-            </select>
-          </div>
-          <div style="flex: 1;">
-            <label>Modo de Relleno</label>
-            <select id="itemFitSelect" onchange="updateSelectedLocalFileTransform()">
-              <option value="cover" selected>Rellenar (Cover)</option>
-              <option value="contain">Ajustar Entera (Contain)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label>Archivo Multimedia (Imagen / MP4)</label>
-            <input type="file" id="mediaFileInput" accept="image/*,video/mp4" onchange="previewSelectedLocalFile(this)">
-          </div>
-        </div>
-        <div class="form-row checkline">
-          <label style="margin:0; text-transform:none;"><input type="checkbox" id="kenBurnsCheckbox"> Efecto Ken Burns (acercamiento suave, solo aplica a imágenes)</label>
-        </div>
-        <button class="btn-action blue" onclick="uploadMedia()" id="uploadBtn">Subir a la Nube</button>
-        <p class="section-subtitle" style="margin-top:8px; margin-bottom:0;">Al terminar de subir, se abre automáticamente el asignador de pantallas y días. Las imágenes se redimensionan automáticamente si son muy pesadas.</p>
-      </div>
-
-      <div class="section-card">
-        <h3 class="section-title">
-          <span>Programación del día: <span id="subfolderTitle">LUNES</span></span>
-          <small style="font-size:11px; color:#38bdf8;" id="statsCounter">0 ítems</small>
-        </h3>
-        <p class="section-subtitle">Arrastrá desde el ícono ☰ para reordenar, o usá las flechas.</p>
-        <div id="playlistContainer"><p style="color:#93c5fd;">Cargando programación...</p></div>
-      </div>
-    </div>
-
-    <div>
-      <div class="section-card" style="position: sticky; top: 24px;">
-        <h3 class="section-title">
-          <span>Vista Previa Simulación TV</span>
-          <small id="tvSizeBadge" style="font-size:11px; color:#38bdf8; font-weight:bold;">50" (Simulación)</small>
-        </h3>
-        <div class="preview-stage">
-          <div id="previewScreen" class="preview-screen orient-270 size-50">
-            <span id="previewPlaceholder" style="color:#64748b; font-size:12px; text-align:center; padding:10px;">Selecciona o carga un archivo</span>
-            <div id="badgePreview" class="draggable-badge"></div>
-            <div id="legalBannerPreview" class="legal-banner-overlay">Portanko Abogados e Inmobiliaria</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  <div id="empty-state" class="removed">
+    <div id="lottie-empty"></div>
+    <h2>Sin contenido programado</h2>
+    <p id="empty-state-detail">No hay medios cargados para hoy en esta pantalla.</p>
   </div>
 
-  <div id="uploadLoader">
-    <div class="loader-spinner" id="css-loader-fallback"></div>
-    <div id="lottie-upload-loader"></div>
-    <div class="loader-text" id="uploadLoaderText">Subiendo archivo al repositorio corporativo...</div>
-  </div>
+  <div id="slider-container" class="orientation-270"></div>
+  <div id="content-badge" class="hidden"></div>
+  <div id="legal-banner" class="hidden"></div>
+  <div id="status-badge" class="hidden">Modo Offline</div>
 
-  <div id="copyToast">
-    <svg class="motion-icon toast-icon-error" id="toastIconError" viewBox="0 0 24 24" style="display:none;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-    <svg class="motion-icon" id="toastIconDefault" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
-    <div id="lottie-toast-success"></div>
-    <span id="copyToastText">URL copiada al portapapeles</span>
-  </div>
-
-  <div id="customModal" class="modal-overlay">
-    <div class="modal-card">
-      <div id="modalTitle" class="modal-title">Confirmación Requerida</div>
-      <div id="modalBody" class="modal-body">¿Está seguro de realizar esta acción?</div>
-      <div class="modal-actions" id="modalActions">
-        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-      </div>
-    </div>
-  </div>
+  <audio id="bg-music" loop preload="auto"></audio>
 
   <script>
     /* =========================================================
-       CONFIG / ESTADO GLOBAL
-       ========================================================= */
-    const firebaseConfig = {
-      apiKey: "AIzaSyAhTFpjaWhAUnA3P5_pXGNgjAUlKEtDXAA",
-      authDomain: "losmayorgatv.firebaseapp.com",
-      databaseURL: "https://losmayorgatv-default-rtdb.firebaseio.com",
-      projectId: "losmayorgatv",
-      storageBucket: "losmayorgatv.firebasestorage.app",
-      messagingSenderId: "859965884915",
-      appId: "1:859965884915:web:558232228bf76b70e7ea86",
-      measurementId: "G-0RQ91ZPNWG"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-
-    let appStarted = false; // evita doble arranque si onAuthStateChanged dispara más de una vez
-
-    const DAYS = [
-      { id: 'lunes', label: 'Lunes' }, { id: 'martes', label: 'Martes' },
-      { id: 'miercoles', label: 'Miércoles' }, { id: 'jueves', label: 'Jueves' },
-      { id: 'viernes', label: 'Viernes' }, { id: 'sabado', label: 'Sábado' },
-      { id: 'domingo', label: 'Domingo' }
-    ];
-
-    /* Misma tabla (mismos nombres y tiempos) que usa el reproductor real —
-     * así la vista previa acá refleja exactamente lo que se va a ver en la TV. */
-    const TRANSITION_EFFECTS = {
-      fade:          { cls: 'fx-fade',       duration: 1600 },
-      fadezoom:      { cls: 'fx-fadezoom',   duration: 1800 },
-      'slide-left':  { cls: 'fx-slide-left', duration: 1000 },
-      'slide-right': { cls: 'fx-slide-right',duration: 1000 },
-      'slide-up':    { cls: 'fx-slide-up',   duration: 1000 },
-      zoom:          { cls: 'fx-zoom',       duration: 900  },
-      none:          { cls: 'fx-none',       duration: 80   }
-    };
-    const DEFAULT_TRANSITION = 'fade';
-    const PREVIEW_PLACEHOLDERS = [
-      { bg: 'linear-gradient(135deg,#1e3a8a,#0c1120)', label: 'Contenido A' },
-      { bg: 'linear-gradient(135deg,#7f1d1d,#0c1120)', label: 'Contenido B' }
-    ];
-    let previewTimer = null;
-    let previewIndex = 0;
-
-    /** Arranca (o reinicia) el loop de vista previa con el efecto actualmente
-     * seleccionado en el <select>. Se llama al cambiar de efecto y al abrir
-     * cada TV, para que la vista previa siempre refleje lo que está elegido. */
-    function startTransitionPreview() {
-      if (previewTimer) clearInterval(previewTimer);
-      previewIndex = 0;
-      renderPreviewSlide();
-      previewTimer = setInterval(renderPreviewSlide, 2400);
-    }
-
-    function renderPreviewSlide() {
-      const stage = document.getElementById('transitionPreviewStage');
-      const select = document.getElementById('transitionEffectSelect');
-      if (!stage || !select) return;
-      const effect = TRANSITION_EFFECTS[select.value] || TRANSITION_EFFECTS[DEFAULT_TRANSITION];
-      const prev = stage.querySelector('.preview-wrapper.active');
-      const item = PREVIEW_PLACEHOLDERS[previewIndex % PREVIEW_PLACEHOLDERS.length];
-      previewIndex++;
-
-      const wrapper = document.createElement('div');
-      wrapper.className = `preview-wrapper ${effect.cls}`;
-      wrapper.style.background = item.bg;
-      wrapper.textContent = item.label;
-      stage.appendChild(wrapper);
-      requestAnimationFrame(() => {
-        wrapper.classList.add('active');
-        setTimeout(() => { if (prev) prev.remove(); }, effect.duration);
-      });
-    }
-
-    let currentTV = "tv1";
-    let currentDay = "lunes";
-    let tvData = {};              // documento completo de la TV activa
-    let tvsList = [];             // [{id, name}] de todas las TVs, para el popup de asignación
-    let mediaRepository = [];     // repositorio GLOBAL, compartido entre TVs
-    let dragFromIndex = null;     // índice de origen durante el arrastre
-
-    function uid() {
-      return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('id-' + Date.now() + '-' + Math.random().toString(16).slice(2));
-    }
-    function escapeHtml(str) {
-      return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-    }
-    function emptyScheduleTemplate() {
-      const sched = {};
-      DAYS.forEach(d => sched[d.id] = []);
-      return sched;
-    }
-    function ensureScheduleShape(data) {
-      if (!data.schedule) data.schedule = emptyScheduleTemplate();
-      DAYS.forEach(d => { if (!Array.isArray(data.schedule[d.id])) data.schedule[d.id] = []; });
-      return data;
-    }
-
-    /* =========================================================
        ANIMACIONES LOTTIE (incrustadas, sin depender de URLs externas)
        ========================================================= */
-    // Anillo de carga (loop) — reemplaza al spinner CSS del loader de subida.
+    // Anillo de carga (loop) — reemplaza al spinner CSS cuando Lottie está disponible.
     const LOTTIE_SPINNER_DATA = {"v":"5.9.0","fr":60,"ip":0,"op":60,"w":200,"h":200,"nm":"PortankoSpinner","ddd":0,"assets":[],
       "layers":[{"ddd":0,"ind":1,"ty":4,"nm":"ring","sr":1,
         "ks":{"o":{"a":0,"k":100},
@@ -654,53 +191,35 @@
         ],"nm":"ringGroup"}],
         "ip":0,"op":60,"st":0,"bm":0}]};
 
-    // Tilde de éxito (una sola vez) — círculo que aparece con rebote + check que se desvanece adentro.
-    const LOTTIE_SUCCESS_DATA = {"v":"5.9.0","fr":30,"ip":0,"op":40,"w":120,"h":120,"nm":"PortankoSuccess","ddd":0,"assets":[],
-      "layers":[
-        {"ddd":0,"ind":1,"ty":4,"nm":"check","sr":1,
-          "ks":{
-            "o":{"a":1,"k":[{"t":0,"s":[0]},{"t":14,"s":[0]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":14,"s":[0]},{"t":24,"s":[100]}]},
-            "r":{"a":0,"k":0},"p":{"a":0,"k":[60,60,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}
-          },
-          "ao":0,
-          "shapes":[{"ty":"gr","it":[
-            {"ty":"sh","ks":{"a":0,"k":{"i":[[0,0],[0,0],[0,0]],"o":[[0,0],[0,0],[0,0]],"v":[[-20,2],[-6,16],[22,-18]],"c":false}}},
-            {"ty":"st","c":{"a":0,"k":[1,1,1,1]},"o":{"a":0,"k":100},"w":{"a":0,"k":8},"lc":2,"lj":2},
-            {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
-          ],"nm":"checkGroup"}],
-          "ip":0,"op":40,"st":0,"bm":0},
-        {"ddd":0,"ind":2,"ty":4,"nm":"circle","sr":1,
-          "ks":{
-            "o":{"a":0,"k":100},"r":{"a":0,"k":0},"p":{"a":0,"k":[60,60,0]},"a":{"a":0,"k":[0,0,0]},
-            "s":{"a":1,"k":[
-              {"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":0,"s":[0,0,100]},
-              {"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":12,"s":[112,112,100]},
-              {"t":18,"s":[100,100,100]}
-            ]}
-          },
-          "ao":0,
-          "shapes":[{"ty":"gr","it":[
-            {"ty":"el","p":{"a":0,"k":[0,0]},"s":{"a":0,"k":[90,90]}},
-            {"ty":"fl","c":{"a":0,"k":[0.133,0.773,0.369,1]},"o":{"a":0,"k":100}},
-            {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
-          ],"nm":"circleGroup"}],
-          "ip":0,"op":40,"st":0,"bm":0}
-      ]};
+    // Ícono "respirando" (loop) para la pantalla de sin contenido.
+    const LOTTIE_EMPTY_DATA = {"v":"5.9.0","fr":30,"ip":0,"op":60,"w":160,"h":160,"nm":"PortankoEmpty","ddd":0,"assets":[],
+      "layers":[{"ddd":0,"ind":1,"ty":4,"nm":"pulse","sr":1,
+        "ks":{
+          "o":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":0,"s":[55]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":30,"s":[100]},{"t":60,"s":[55]}]},
+          "r":{"a":0,"k":0},"p":{"a":0,"k":[80,80,0]},"a":{"a":0,"k":[0,0,0]},
+          "s":{"a":1,"k":[{"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":0,"s":[100,100,100]},{"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":30,"s":[114,114,100]},{"t":60,"s":[100,100,100]}]}
+        },
+        "ao":0,
+        "shapes":[{"ty":"gr","it":[
+          {"ty":"el","p":{"a":0,"k":[0,0]},"s":{"a":0,"k":[130,130]}},
+          {"ty":"st","c":{"a":0,"k":[0.219,0.741,0.973,1]},"o":{"a":0,"k":100},"w":{"a":0,"k":8},"lc":2,"lj":2},
+          {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
+        ],"nm":"pulseGroup"}],
+        "ip":0,"op":60,"st":0,"bm":0}]};
 
-    let lottieSuccessAnim = null;
-
-    /** Inicializa una animación Lottie con manejo de errores: si algo falla la UI
-     * simplemente se queda con el ícono estático de respaldo, sin romper nada. */
-    function initLottieSafe(containerId, data, loop, fallbackToHideId) {
+    /** Inicializa una animación Lottie con manejo de errores: si algo falla
+     * (librería no cargó, JSON inválido, etc.) simplemente no se muestra nada
+     * animado y el resto de la pantalla sigue funcionando con normalidad. */
+    function initLottieSafe(containerId, data, loop, fallbackToHide) {
       try {
         if (typeof lottie === 'undefined') return null;
         const el = document.getElementById(containerId);
         if (!el) return null;
         const anim = lottie.loadAnimation({
-          container: el, renderer: 'svg', loop: !!loop, autoplay: !!loop, animationData: data
+          container: el, renderer: 'svg', loop: !!loop, autoplay: true, animationData: data
         });
         el.style.display = 'block';
-        if (fallbackToHideId) { const fb = document.getElementById(fallbackToHideId); if (fb) fb.style.display = 'none'; }
+        if (fallbackToHide) { const fb = document.getElementById(fallbackToHide); if (fb) fb.style.display = 'none'; }
         return anim;
       } catch (e) {
         console.warn('No se pudo iniciar la animación Lottie:', e);
@@ -708,1223 +227,401 @@
       }
     }
 
-    initLottieSafe('lottie-upload-loader', LOTTIE_SPINNER_DATA, true, 'css-loader-fallback');
-    lottieSuccessAnim = initLottieSafe('lottie-toast-success', LOTTIE_SUCCESS_DATA, false, null);
-    if (lottieSuccessAnim) document.getElementById('toastIconDefault').style.display = 'none';
+    initLottieSafe('lottie-loader', LOTTIE_SPINNER_DATA, true, 'css-spinner-fallback');
+    initLottieSafe('lottie-empty', LOTTIE_EMPTY_DATA, true, null);
 
     /* =========================================================
-       TOAST / MODAL GENÉRICOS
+       CONFIGURACIÓN GENERAL
        ========================================================= */
-    function showToast(msg, isError) {
-      const toast = document.getElementById('copyToast');
-      document.getElementById('copyToastText').innerText = msg;
-      toast.classList.toggle('error', !!isError);
+    const urlParams = new URLSearchParams(window.location.search);
+    const TV_ID = urlParams.get('tv') || 'tv1';
 
-      const errorIcon = document.getElementById('toastIconError');
-      const successLottieEl = document.getElementById('lottie-toast-success');
-      const defaultIcon = document.getElementById('toastIconDefault');
+    const container     = document.getElementById("slider-container");
+    const loaderScreen  = document.getElementById("loader-screen");
+    const emptyState    = document.getElementById("empty-state");
+    const emptyDetail   = document.getElementById("empty-state-detail");
+    const statusBadge   = document.getElementById("status-badge");
+    const legalBanner   = document.getElementById("legal-banner");
+    const bgMusic       = document.getElementById("bg-music");
 
-      if (isError) {
-        errorIcon.style.display = 'block';
-        successLottieEl.style.display = 'none';
-        defaultIcon.style.display = 'none';
+    const DEFAULT_LEGAL_TEXT = "Portanko Abogados e Inmobiliaria";
+    const DAY_NAMES = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    const MAX_CONSECUTIVE_ERRORS = 5; // corta el loop si TODO el playlist está roto
+
+    /** Efectos de transición disponibles. "duration" tiene que coincidir con el
+     * tiempo real de la transición CSS (fx-* de arriba) para que el elemento
+     * saliente se retire justo cuando el entrante terminó de aparecer. */
+    const TRANSITION_EFFECTS = {
+      fade:          { cls: 'fx-fade',       duration: 1600 },
+      fadezoom:      { cls: 'fx-fadezoom',   duration: 1800 },
+      'slide-left':  { cls: 'fx-slide-left', duration: 1000 },
+      'slide-right': { cls: 'fx-slide-right',duration: 1000 },
+      'slide-up':    { cls: 'fx-slide-up',   duration: 1000 },
+      zoom:          { cls: 'fx-zoom',       duration: 900  },
+      none:          { cls: 'fx-none',       duration: 80   }
+    };
+    const DEFAULT_TRANSITION = 'fade';
+
+    let playlist = [];
+    let currentIndex = 0;
+    let stepTimeout = null;
+    let currentAudioUrl = "";
+    let currentTransitionEffect = DEFAULT_TRANSITION;
+    let lastFirestoreData = null;  // guardamos el último doc para recalcular en el cambio de día
+    let lastAppliedDay = getCurrentDayName();
+    let consecutiveErrors = 0;
+    let firstRenderDone = false;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhTFpjaWhAUnA3P5_pXGNgjAUlKEtDXAA",
+      authDomain: "losmayorgatv.firebaseapp.com",
+      databaseURL: "https://losmayorgatv-default-rtdb.firebaseio.com",
+      projectId: "losmayorgatv",
+      storageBucket: "losmayorgatv.firebasestorage.app",
+      messagingSenderId: "859965884915",
+      appId: "1:859965884915:web:558232228bf76b70e7ea86",
+      measurementId: "G-0RQ91ZPNWG"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    // Cache local para tolerar cortes de conexión breves sin perder la última config
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => { /* no crítico si falla */ });
+
+    /* =========================================================
+       HELPERS
+       ========================================================= */
+    function getCurrentDayName() {
+      return DAY_NAMES[new Date().getDay()];
+    }
+
+    function hideLoader() {
+      if (loaderScreen && !loaderScreen.classList.contains("hidden")) {
+        loaderScreen.classList.add("hidden");
+      }
+    }
+
+    function showEmptyState(detailText) {
+      hideLoader();
+      if (detailText) emptyDetail.textContent = detailText;
+      emptyState.classList.remove("removed");
+    }
+
+    function hideEmptyState() {
+      emptyState.classList.add("removed");
+    }
+
+    function setOfflineBadge(isOffline) {
+      statusBadge.classList.toggle("hidden", !isOffline);
+    }
+
+    function applyOrientation(degree) {
+      const valid = [0, 90, 180, 270];
+      const deg = valid.includes(Number(degree)) ? Number(degree) : 270;
+      container.className = "";
+      container.classList.add(`orientation-${deg}`);
+    }
+
+    function applyLegalBanner(config) {
+      if (!config) {
+        legalBanner.textContent = DEFAULT_LEGAL_TEXT;
+        legalBanner.classList.remove("hidden");
+        return;
+      }
+      legalBanner.textContent = config.text || DEFAULT_LEGAL_TEXT;
+      if (config.show === false) legalBanner.classList.add("hidden");
+      else legalBanner.classList.remove("hidden");
+    }
+
+    /** Muestra u oculta la insignia (OPORTUNIDAD / VENDIDO / etc.) del ítem actual. */
+    function updateContentBadge(badgeText) {
+      const badgeEl = document.getElementById('content-badge');
+      if (!badgeEl) return;
+      if (badgeText) {
+        badgeEl.textContent = badgeText;
+        badgeEl.classList.remove('hidden');
       } else {
-        errorIcon.style.display = 'none';
-        if (lottieSuccessAnim) {
-          successLottieEl.style.display = 'block';
-          defaultIcon.style.display = 'none';
-          lottieSuccessAnim.goToAndPlay(0, true);
-        } else {
-          defaultIcon.style.display = 'block';
-        }
-      }
-
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2800);
-    }
-    function closeModal() { document.getElementById('customModal').classList.remove('active'); }
-    function showConfirmModal(title, text, onConfirmAction, isDanger) {
-      document.getElementById('modalTitle').innerText = title;
-      document.getElementById('modalBody').innerText = text;
-      const cls = isDanger ? 'btn-modal-danger' : 'btn-modal-confirm';
-      document.getElementById('modalActions').innerHTML = `
-        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="${cls}" id="execConfirmBtn">Confirmar</button>`;
-      document.getElementById('execConfirmBtn').onclick = () => { closeModal(); onConfirmAction(); };
-      document.getElementById('customModal').classList.add('active');
-    }
-
-    function copyTVUrl(tvId) {
-      const baseUrl = window.location.origin + window.location.pathname.replace('admin-portanko.html', 'index.html').replace('admin.html', 'index.html');
-      const tvUrl = `${baseUrl}?tv=${tvId}`;
-      navigator.clipboard.writeText(tvUrl).then(() => showToast('URL copiada al portapapeles')).catch(() => showToast('No se pudo copiar automáticamente. URL: ' + tvUrl, true));
-    }
-
-    /* =========================================================
-       BARRA DE DÍAS (vista de programación de la TV activa)
-       ========================================================= */
-    function renderDaysBar() {
-      const bar = document.getElementById('daysContainer');
-      bar.innerHTML = "";
-      DAYS.forEach(d => {
-        const tab = document.createElement('div');
-        tab.className = `day-tab ${d.id === currentDay ? 'active' : ''}`;
-        tab.innerText = d.label;
-        tab.onclick = () => selectDay(d.id);
-        bar.appendChild(tab);
-      });
-    }
-    function selectDay(day) {
-      currentDay = day;
-      renderDaysBar();
-      document.getElementById('subfolderTitle').innerText = DAYS.find(d => d.id === day).label.toUpperCase();
-      renderDaySchedule();
-    }
-
-    /** Cambia de día Y desplaza la pantalla hasta la programación — usado desde el mini dashboard. */
-    function goToDay(dayId) {
-      selectDay(dayId);
-      const el = document.getElementById('playlistContainer');
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-
-    /* =========================================================
-       MEDICIÓN DE DURACIÓN REAL DE VIDEOS
-       (los videos se reproducen enteros en la TV; para que el dashboard
-       pueda sumar minutos reales, medimos su duración con un <video> oculto)
-       ========================================================= */
-    const videoDurationCache = {};      // url -> segundos, cacheado durante la sesión
-    const videoDurationMeasuring = new Set(); // urls que ya están siendo medidas, evita duplicar trabajo
-
-    function measureVideoDurationByUrl(url) {
-      if (videoDurationCache[url] !== undefined) return Promise.resolve(videoDurationCache[url]);
-      return new Promise(resolve => {
-        try {
-          const v = document.createElement('video');
-          v.preload = 'metadata';
-          v.muted = true;
-          v.src = url;
-          const finish = (val) => { videoDurationCache[url] = val; resolve(val); };
-          v.onloadedmetadata = () => finish(Math.round(v.duration) || null);
-          v.onerror = () => finish(null);
-          setTimeout(() => finish(videoDurationCache[url] !== undefined ? videoDurationCache[url] : null), 8000);
-        } catch (e) { resolve(null); }
-      });
-    }
-
-    function measureLocalVideoDuration(file) {
-      return new Promise(resolve => {
-        try {
-          const v = document.createElement('video');
-          v.preload = 'metadata';
-          v.muted = true;
-          const objUrl = URL.createObjectURL(file);
-          v.src = objUrl;
-          const finish = (val) => { URL.revokeObjectURL(objUrl); resolve(val); };
-          v.onloadedmetadata = () => finish(Math.round(v.duration) || null);
-          v.onerror = () => finish(null);
-          setTimeout(() => finish(null), 6000);
-        } catch (e) { resolve(null); }
-      });
-    }
-
-    /** Redimensiona/comprime una imagen en el navegador antes de subirla, para no
-     * gastar espacio y ancho de banda con fotos de celular de 10+ MB que en una
-     * TV nunca se van a ver a esa resolución. Si la imagen ya es chica, o algo
-     * falla, se sube el archivo original tal cual (nunca bloquea la subida). */
-    const MAX_IMAGE_DIMENSION_PX = 1920;
-    const IMAGE_JPEG_QUALITY = 0.85;
-    function compressImageFile(file) {
-      return new Promise(resolve => {
-        if (!file.type.startsWith('image/')) return resolve(file);
-        try {
-          const objUrl = URL.createObjectURL(file);
-          const img = new Image();
-          img.onload = () => {
-            const { width, height } = img;
-            if (width <= MAX_IMAGE_DIMENSION_PX && height <= MAX_IMAGE_DIMENSION_PX) {
-              URL.revokeObjectURL(objUrl);
-              resolve(file); // ya es suficientemente chica, no hace falta tocarla
-              return;
-            }
-            const scale = Math.min(MAX_IMAGE_DIMENSION_PX / width, MAX_IMAGE_DIMENSION_PX / height);
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(width * scale);
-            canvas.height = Math.round(height * scale);
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            canvas.toBlob(blob => {
-              URL.revokeObjectURL(objUrl);
-              if (!blob) { resolve(file); return; }
-              const newName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-              resolve(new File([blob], newName, { type: 'image/jpeg' }));
-            }, 'image/jpeg', IMAGE_JPEG_QUALITY);
-          };
-          img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(file); };
-          img.src = objUrl;
-        } catch (e) { resolve(file); }
-      });
-    }
-
-    /** Completa retroactivamente la duración de videos ya asignados en el schedule
-     * de la TV activa que todavía no tienen "durationSeconds" guardado. */
-    async function ensureScheduleVideoDurations() {
-      if (!tvData.schedule) return;
-      const urlsNeeded = new Set();
-      DAYS.forEach(d => (tvData.schedule[d.id] || []).forEach(item => {
-        if (item.type === 'video' && item.durationSeconds == null && !videoDurationMeasuring.has(item.url)) {
-          urlsNeeded.add(item.url);
-        }
-      }));
-      if (urlsNeeded.size === 0) return;
-
-      let changed = false;
-      for (const url of urlsNeeded) {
-        videoDurationMeasuring.add(url);
-        const seconds = await measureVideoDurationByUrl(url);
-        videoDurationMeasuring.delete(url);
-        if (seconds != null) {
-          DAYS.forEach(d => (tvData.schedule[d.id] || []).forEach(item => {
-            if (item.type === 'video' && item.url === url && item.durationSeconds == null) {
-              item.durationSeconds = seconds;
-              changed = true;
-            }
-          }));
-        }
-      }
-      if (changed) {
-        renderWeekDashboard();
-        try { await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true }); }
-        catch (e) { console.warn('No se pudo guardar la duración medida de video:', e); }
+        badgeEl.classList.add('hidden');
       }
     }
 
-    /** Igual que arriba, pero para la nube interna global (portanko_media). */
-    async function ensureRepoVideoDurations() {
-      const pending = mediaRepository.filter(m => m.type === 'video' && m.durationSeconds == null && !videoDurationMeasuring.has(m.url));
-      for (const m of pending) {
-        videoDurationMeasuring.add(m.url);
-        const seconds = await measureVideoDurationByUrl(m.url);
-        videoDurationMeasuring.delete(m.url);
-        if (seconds != null) {
-          m.durationSeconds = seconds;
-          try { await db.collection('portanko_media').doc(m.id).set({ durationSeconds: seconds }, { merge: true }); }
-          catch (e) { console.warn('No se pudo guardar la duración medida de video en la nube:', e); }
-        }
+    function updateBackgroundAudio(audioSettings) {
+      if (!audioSettings || !audioSettings.enabled || !audioSettings.audioUrl) {
+        bgMusic.pause();
+        currentAudioUrl = "";
+        return;
+      }
+      if (currentAudioUrl !== audioSettings.audioUrl) {
+        currentAudioUrl = audioSettings.audioUrl;
+        bgMusic.src = currentAudioUrl;
+        bgMusic.volume = audioSettings.volume !== undefined ? audioSettings.volume : 0.5;
+        playAudioWithFallback();
+      } else if (audioSettings.volume !== undefined) {
+        bgMusic.volume = audioSettings.volume;
       }
     }
 
-    /* =========================================================
-       MINI DASHBOARD SEMANAL
-       ========================================================= */
-    function formatDuration(totalSeconds) {
-      totalSeconds = Math.round(totalSeconds || 0);
-      const m = Math.floor(totalSeconds / 60);
-      const s = totalSeconds % 60;
-      return m > 0 ? `${m}m ${s}s` : `${s}s`;
-    }
-
-    function computeAllDaysStats() {
-      const stats = {};
-      DAYS.forEach(d => {
-        const fullList = (tvData.schedule && tvData.schedule[d.id]) || [];
-        const list = fullList.filter(i => i.active !== false);
-        const vids = list.filter(i => i.type === 'video');
-        const imgs = list.filter(i => i.type !== 'video');
-        const imgSeconds = imgs.reduce((s, i) => s + (i.duration || 7), 0);
-        const knownVids = vids.filter(v => typeof v.durationSeconds === 'number');
-        const vidSeconds = knownVids.reduce((s, i) => s + i.durationSeconds, 0);
-        stats[d.id] = {
-          total: list.length, imgCount: imgs.length, vidCount: vids.length,
-          imgSeconds, vidSeconds, unknownVidCount: vids.length - knownVids.length,
-          inactiveCount: fullList.length - list.length
-        };
-      });
-      return stats;
-    }
-
-    function renderWeekDashboard() {
-      const container = document.getElementById('weekDashboard');
-      if (!container) return;
-      document.getElementById('dashTvName').innerText = (tvsList.find(t => t.id === currentTV) || {}).name || currentTV;
-
-      const stats = computeAllDaysStats();
-      let weekItems = 0, weekSeconds = 0, weekUnknownVid = 0, weekInactive = 0;
-
-      const rows = DAYS.map(d => {
-        const st = stats[d.id];
-        weekItems += st.total;
-        weekSeconds += st.imgSeconds + st.vidSeconds;
-        weekUnknownVid += st.unknownVidCount;
-        weekInactive += st.inactiveCount;
-        const knownTotal = st.imgSeconds + st.vidSeconds;
-        return `
-          <div class="dash-row ${d.id === currentDay ? 'active' : ''}" onclick="goToDay('${d.id}')">
-            <span class="dash-day">${d.label}</span>
-            <span class="dash-metric">${st.total} ítem(s)${st.inactiveCount ? ` <small>(+${st.inactiveCount} desact.)</small>` : ''}</span>
-            <span class="dash-metric">${st.imgCount} img · ${st.vidCount} video(s)${st.unknownVidCount ? ` <small>(${st.unknownVidCount} sin medir)</small>` : ''}</span>
-            <span class="dash-metric">${formatDuration(knownTotal)}${st.unknownVidCount ? ' +' : ''}</span>
-            <button class="dash-go" onclick="event.stopPropagation(); goToDay('${d.id}')">Ir →</button>
-          </div>`;
-      }).join('');
-
-      container.innerHTML = rows;
-      document.getElementById('dashWeekTotal').innerText =
-        `${weekItems} ítem(s) en pantalla en la semana · ~${formatDuration(weekSeconds)}` +
-        (weekUnknownVid ? ` (+${weekUnknownVid} video(s) sin medir)` : '') +
-        (weekInactive ? ` · ${weekInactive} desactivado(s)` : '');
-    }
-
-    /* =========================================================
-       PREVIEW LOCAL (ANTES DE SUBIR)
-       ========================================================= */
-    function updateSelectedLocalFileTransform() {
-      const rot = document.getElementById('itemRotationSelect').value;
-      const fit = document.getElementById('itemFitSelect').value;
-      const wrapper = document.querySelector('#previewScreen .media-wrapper');
-      if (wrapper) {
-        wrapper.className = `media-wrapper rot-${rot}`;
-        const media = wrapper.querySelector('img, video');
-        if (media) media.className = `fit-${fit}`;
+    function playAudioWithFallback() {
+      const promise = bgMusic.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          // Algunos navegadores de Smart TV bloquean el autoplay con sonido:
+          // reintenta ante el primer evento de interacción disponible.
+          const retry = () => { bgMusic.play().catch(() => {}); };
+          document.addEventListener("click", retry, { once: true });
+          document.addEventListener("touchstart", retry, { once: true });
+          document.addEventListener("keydown", retry, { once: true });
+        });
       }
     }
-    function previewSelectedLocalFile(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const screen = document.getElementById('previewScreen');
-      const oldWrapper = screen.querySelector('.media-wrapper');
-      if (oldWrapper) oldWrapper.remove();
-      document.getElementById('previewPlaceholder').style.display = 'none';
 
-      const rot = document.getElementById('itemRotationSelect').value || "0";
-      const fit = document.getElementById('itemFitSelect').value || "cover";
-      const fileURL = URL.createObjectURL(file);
-      const wrapper = document.createElement('div');
-      wrapper.className = `media-wrapper rot-${rot}`;
-
-      if (file.type.includes('video')) {
-        const video = document.createElement('video');
-        video.src = fileURL; video.className = `fit-${fit}`;
-        video.autoplay = true; video.muted = true; video.loop = true;
-        wrapper.appendChild(video);
+    /** Calcula el playlist correspondiente al día de hoy, con retrocompatibilidad */
+    function resolvePlaylistForToday(data) {
+      const today = getCurrentDayName();
+      let list;
+      if (data.schedule && Array.isArray(data.schedule[today])) {
+        list = data.schedule[today];
+      } else if (Array.isArray(data.playlist)) {
+        list = data.playlist; // retrocompatibilidad con documentos sin "schedule"
       } else {
-        const img = document.createElement('img');
-        img.src = fileURL; img.className = `fit-${fit}`;
-        wrapper.appendChild(img);
+        list = [];
       }
-      screen.appendChild(wrapper);
+      // Los ítems desactivados desde el admin (active === false) se guardan
+      // igual en Firestore para no perder su configuración, pero no se muestran.
+      return list.filter(item => item.active !== false);
     }
-    function updatePreviewOrientation() {
-      const orient = document.getElementById('orientationSelect').value;
-      const size = document.getElementById('sizeSelect').value;
-      document.getElementById('previewScreen').className = `preview-screen orient-${orient} size-${size}`;
-      document.getElementById('tvSizeBadge').innerText = `${size}" Pulgadas Simulación`;
-    }
-    function updateBadgeText() {
-      const val = document.getElementById('badgeSelect').value;
-      const badge = document.getElementById('badgePreview');
-      if (val) { badge.innerText = val; badge.style.display = 'block'; }
-      else badge.style.display = 'none';
-    }
-    function updateBannerPreview() {
-      const text = document.getElementById('legalBannerText').value || 'Portanko Abogados e Inmobiliaria';
-      const show = document.getElementById('showLegalBanner').value === "true";
-      const banner = document.getElementById('legalBannerPreview');
-      banner.innerText = text;
-      banner.style.display = show ? "block" : "none";
+
+    /** Precarga silenciosa del próximo ítem para evitar parpadeos/pantallas negras */
+    function preloadItem(item) {
+      if (!item) return;
+      if (item.type === 'video') {
+        const v = document.createElement('video');
+        v.preload = 'auto';
+        v.src = item.url;
+        v.muted = true;
+      } else {
+        const img = new Image();
+        img.src = item.url;
+      }
     }
 
     /* =========================================================
-       LISTADO DE TVs (barra superior + caché para el asignador)
+       FIRESTORE: LISTENER PRINCIPAL
        ========================================================= */
-    let lastTVsSnapshotData = []; // [{id, data}] cacheado del último snapshot, para poder re-pintar la barra al instante
+    function listenTVConfiguration() {
+      db.collection("portanko_tvs").doc(TV_ID).onSnapshot(
+        doc => {
+          setOfflineBadge(false);
 
-    function listenAllTVs() {
-      db.collection('portanko_tvs').onSnapshot(snapshot => {
-        lastTVsSnapshotData = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
-        renderTVBar();
-      }, err => { console.error(err); showToast('No se pudo conectar con Firestore.', true); });
-    }
-
-    /** Texto relativo tipo "hace 2 min" a partir de un ISO string. */
-    function formatRelativeTime(iso) {
-      if (!iso) return null;
-      const diffMs = Date.now() - new Date(iso).getTime();
-      if (diffMs < 0) return 'hace instantes';
-      const diffMin = Math.floor(diffMs / 60000);
-      if (diffMin < 1) return 'hace instantes';
-      if (diffMin < 60) return `hace ${diffMin} min`;
-      const diffH = Math.floor(diffMin / 60);
-      if (diffH < 24) return `hace ${diffH}h`;
-      const diffD = Math.floor(diffH / 24);
-      return `hace ${diffD}d`;
-    }
-
-    /** Color + nivel del estado: "live" (verde, en vivo, parpadea) = vista hace
-     * poco; "idle" (amarillo, fijo) = un rato sin verse; "offline" (rojo o gris,
-     * fijo) = hace mucho o nunca se conectó — este último nivel es el que
-     * dispara la insignia de alerta y el aviso. */
-    function tvStatusInfo(status) {
-      const iso = status && status.lastSeenIso;
-      if (!iso) return { color: '#64748b', label: 'Nunca se conectó — no está mostrando contenido', level: 'offline' };
-      const diffMin = (Date.now() - new Date(iso).getTime()) / 60000;
-      const relative = formatRelativeTime(iso);
-      if (diffMin < 3) return { color: '#22c55e', label: `En vivo · vista ${relative}`, level: 'live' };
-      if (diffMin < 15) return { color: '#eab308', label: `Vista ${relative}`, level: 'idle' };
-      return { color: '#ef4444', label: `Sin señal · vista ${relative} — no está mostrando contenido`, level: 'offline' };
-    }
-
-    let tvsAlreadyAlerted = new Set(); // evita repetir el toast de alerta en cada refresco de la barra
-
-    /** Dibuja la barra de TVs a partir de la última data conocida. Se puede llamar
-     * en cualquier momento (por ejemplo, al cambiar de TV) para que el resaltado
-     * en rojo de la pantalla activa se actualice al instante, sin depender de que
-     * llegue un nuevo snapshot de Firestore. */
-    function renderTVBar() {
-      tvsList = [];
-      const tvContainer = document.getElementById('tvContainer');
-      tvContainer.innerHTML = "";
-
-      lastTVsSnapshotData.forEach(({ id: tvId, data }) => {
-        tvsList.push({ id: tvId, name: data.name || tvId.toUpperCase() });
-        const status = tvStatusInfo(data.status);
-
-        // Alerta única por caída: avisa la primera vez que detecta "offline",
-        // y se resetea si la TV vuelve a estar en vivo (para poder re-avisar
-        // ante una caída futura sin spamear en cada refresco de 60s).
-        if (status.level === 'offline') {
-          if (!tvsAlreadyAlerted.has(tvId)) {
-            tvsAlreadyAlerted.add(tvId);
-            showToast(`"${data.name || tvId}" no está mostrando contenido (sin señal).`, true);
+          if (!doc.exists) {
+            showEmptyState(`No existe configuración para la pantalla "${TV_ID}".`);
+            return;
           }
-        } else {
-          tvsAlreadyAlerted.delete(tvId);
-        }
 
-        const wrapper = document.createElement('div');
-        wrapper.className = `tv-btn-wrapper ${tvId === currentTV ? 'active' : ''}`;
-        wrapper.innerHTML = `
-          <button class="tv-btn" onclick="selectTV('${tvId}')">
-            <span class="tv-status-dot status-${status.level}" style="background:${status.color}; color:${status.color};" title="${escapeHtml(status.label)}"></span>
-            ${status.level === 'offline' ? `<span class="tv-alert-badge" title="${escapeHtml(status.label)}">!</span>` : ''}
-            <span>${escapeHtml(data.name || tvId.toUpperCase())}</span>
-            <span onclick="event.stopPropagation(); showTVActions('${tvId}')" title="Opciones" style="display:inline-flex; align-items:center;">
-              <svg class="motion-icon motion-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </span>
-          </button>
-          <button class="flaticon-copy-btn" onclick="event.stopPropagation(); copyTVUrl('${tvId}')" title="Copiar URL directa">
-            <svg class="motion-icon motion-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-          </button>`;
-        tvContainer.appendChild(wrapper);
-      });
-
-      if (lastTVsSnapshotData.length === 0) {
-        tvContainer.innerHTML = '<span style="color:#93c5fd; font-size:13px;">No hay pantallas creadas todavía.</span>';
-      }
-
-      const addBtn = document.createElement('button');
-      addBtn.className = 'btn-add-tv';
-      addBtn.innerHTML = `<svg class="motion-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Agregar Nueva TV</span>`;
-      addBtn.onclick = addNewTV;
-      tvContainer.appendChild(addBtn);
-    }
-
-    function showTVActions(tvId) {
-      const baseUrl = window.location.origin + window.location.pathname.replace('admin-portanko.html', 'index.html').replace('admin.html', 'index.html');
-      const tvUrl = `${baseUrl}?tv=${tvId}`;
-      document.getElementById('modalTitle').innerText = `GESTIÓN DE TV: ${tvId.toUpperCase()}`;
-      document.getElementById('modalBody').innerHTML = `
-        <p style="margin-bottom:12px;"><strong>URL del Televisor:</strong></p>
-        <div style="display:flex; gap:8px; margin-bottom:16px;">
-          <input type="text" value="${escapeHtml(tvUrl)}" readonly onclick="this.select()">
-          <button style="background:#38bdf8; color:#020617; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="copyTVUrl('${tvId}')">Copiar</button>
-        </div>
-        <p>¿Deseás eliminar permanentemente este televisor y su programación? El contenido en la nube interna NO se borra.</p>`;
-      document.getElementById('modalActions').innerHTML = `
-        <button class="btn-modal-cancel" onclick="closeModal()">Cerrar</button>
-        <button class="btn-modal-danger" onclick="requestDeleteTV('${tvId}')">Eliminar TV</button>`;
-      document.getElementById('customModal').classList.add('active');
-    }
-
-    function requestDeleteTV(tvId) {
-      closeModal();
-      showConfirmModal('RECONFIRMACIÓN DE SEGURIDAD', `¿Eliminar definitivamente el televisor '${tvId}'? Esta acción no se puede deshacer.`, async () => {
-        await db.collection('portanko_tvs').doc(tvId).delete();
-        currentTV = 'tv1';
-        loadTVConfig();
-        showToast('Televisor eliminado.');
-      }, true);
-    }
-
-    function selectTV(tvId) {
-      stopAudioPreview(); // no dejar sonando una vista previa al cambiar de pantalla
-      currentTV = tvId;
-      renderTVBar();   // resalta en rojo la TV recién elegida de inmediato
-      loadTVConfig();  // y recién después trae su configuración/programación
-    }
-
-    /* =========================================================
-       CARGA DE CONFIGURACIÓN DE LA TV ACTIVA
-       ========================================================= */
-    function loadTVConfig() {
-      db.collection('portanko_tvs').doc(currentTV).onSnapshot(doc => {
-        if (!doc.exists) return;
-        tvData = ensureScheduleShape(doc.data());
-        if (!tvData.audioSettings) tvData.audioSettings = { enabled: false, audioUrl: "", volume: 0.5 };
-        if (!tvData.legalBanner) tvData.legalBanner = { text: "Portanko Abogados e Inmobiliaria", show: true };
-
-        document.getElementById('orientationSelect').value = tvData.orientation || 270;
-        document.getElementById('sizeSelect').value = tvData.tvSize || "50";
-        document.getElementById('audioEnabled').value = tvData.audioSettings.enabled ? "true" : "false";
-        document.getElementById('audioUrl').value = tvData.audioSettings.audioUrl || "";
-        document.getElementById('audioVolume').value = tvData.audioSettings.volume ?? 0.5;
-        document.getElementById('legalBannerText').value = tvData.legalBanner.text || "";
-        document.getElementById('showLegalBanner').value = tvData.legalBanner.show === false ? "false" : "true";
-        document.getElementById('transitionEffectSelect').value = TRANSITION_EFFECTS[tvData.transitionEffect] ? tvData.transitionEffect : DEFAULT_TRANSITION;
-
-        updatePreviewOrientation();
-        updateBannerPreview();
-        startTransitionPreview();
-        renderDaysBar();
-        renderDaySchedule();
-        renderWeekDashboard();
-        ensureScheduleVideoDurations(); // completa duraciones de video faltantes en segundo plano
-      }, err => { console.error(err); showToast('Error cargando la configuración de la TV.', true); });
-    }
-
-    /* =========================================================
-       NUBE INTERNA DE MÚSICA (colección aparte: el audio es un ajuste por
-       TV, no algo que se programa día a día como imágenes/videos)
-       ========================================================= */
-    let audioRepository = [];
-    let currentlyPlayingAudioEl = null;
-    let currentlyPlayingBtn = null;
-
-    function listenGlobalAudioRepository() {
-      db.collection('portanko_audio').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-        audioRepository = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderAudioRepository();
-      }, err => { console.error(err); showToast('No se pudo cargar la música interna.', true); });
-    }
-
-    function renderAudioRepository() {
-      const counter = document.getElementById('audioRepoCounter');
-      const list = document.getElementById('audioTrackList');
-      if (counter) counter.innerText = `${audioRepository.length} pista(s)`;
-      if (!list) return;
-
-      if (audioRepository.length === 0) {
-        list.innerHTML = '<p style="color:#93c5fd; font-size:12px;">Todavía no subiste ninguna música.</p>';
-        return;
-      }
-      list.innerHTML = '';
-      audioRepository.forEach(track => {
-        const row = document.createElement('div');
-        row.className = 'audio-track-item';
-        row.innerHTML = `
-          <button class="audio-play-btn" title="Escuchar / pausar">▶</button>
-          <div style="flex:1; min-width:0;">
-            <strong style="font-size:12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(track.title || 'Sin título')}</strong>
-          </div>
-          <button class="pl-btn" title="Usar como música de fondo de la TV activa">Usar en esta TV</button>
-          <button class="pl-btn del" title="Eliminar de la nube">X</button>
-        `;
-        const [playBtn, useBtn, delBtn] = row.querySelectorAll('button');
-        playBtn.onclick = () => toggleAudioPreview(track.id, playBtn);
-        useBtn.onclick = () => useAudioTrack(track.id);
-        delBtn.onclick = () => requestDeleteAudioTrack(track.id);
-        list.appendChild(row);
-      });
-    }
-
-    /** Reproduce/pausa una vista previa del track. Si había otra sonando, la corta primero. */
-    function toggleAudioPreview(trackId, btnEl) {
-      const track = audioRepository.find(t => t.id === trackId);
-      if (!track) return;
-
-      if (currentlyPlayingAudioEl && currentlyPlayingBtn === btnEl && !currentlyPlayingAudioEl.paused) {
-        stopAudioPreview();
-        return;
-      }
-      stopAudioPreview(); // corta cualquier otra vista previa que estuviera sonando
-
-      const audio = new Audio(track.url);
-      audio.play().catch(() => showToast('No se pudo reproducir la vista previa.', true));
-      audio.onended = () => stopAudioPreview();
-      currentlyPlayingAudioEl = audio;
-      currentlyPlayingBtn = btnEl;
-      btnEl.textContent = '⏸';
-      btnEl.classList.add('playing');
-    }
-
-    function stopAudioPreview() {
-      if (currentlyPlayingAudioEl) { try { currentlyPlayingAudioEl.pause(); } catch (e) {} }
-      if (currentlyPlayingBtn) { currentlyPlayingBtn.textContent = '▶'; currentlyPlayingBtn.classList.remove('playing'); }
-      currentlyPlayingAudioEl = null;
-      currentlyPlayingBtn = null;
-    }
-
-    /** Copia la URL del track elegido al campo de música de fondo de la TV
-     * activa. Todavía hace falta tocar "Guardar Ajustes de esta TV" para
-     * que quede aplicado — mismo patrón que el resto del panel. */
-    function useAudioTrack(trackId) {
-      const track = audioRepository.find(t => t.id === trackId);
-      if (!track) return;
-      document.getElementById('audioUrl').value = track.url;
-      document.getElementById('audioEnabled').value = 'true';
-      showToast(`"${track.title}" seleccionada. No olvides tocar "Guardar Ajustes de esta TV".`);
-    }
-
-    async function uploadAudioTrack() {
-      const fileInput = document.getElementById('audioTrackFileInput');
-      const file = fileInput.files[0];
-      if (!file) return showToast('Seleccioná un archivo de audio primero.', true);
-      if (!file.type.startsWith('audio/')) return showToast('El archivo tiene que ser de audio (MP3).', true);
-
-      const loader = document.getElementById('uploadLoader');
-      const btn = document.getElementById('uploadAudioBtn');
-      document.getElementById('uploadLoaderText').innerText = 'Subiendo música al repositorio...';
-      loader.classList.add('active');
-      btn.disabled = true;
-
-      try {
-        const storagePath = `portanko/audio/${Date.now()}_${file.name}`;
-        const storageRef = storage.ref(storagePath);
-        const snapshot = await storageRef.put(file);
-        const downloadURL = await snapshot.ref.getDownloadURL();
-
-        await db.collection('portanko_audio').add({
-          title: document.getElementById('audioTrackTitle').value || file.name,
-          url: downloadURL,
-          storagePath,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        fileInput.value = '';
-        document.getElementById('audioTrackTitle').value = '';
-        showToast('Música subida a la nube interna.');
-      } catch (err) {
-        console.error(err);
-        showToast('Error al subir la música.', true);
-      } finally {
-        loader.classList.remove('active');
-        btn.disabled = false;
-      }
-    }
-
-    /** Revisa en todas las TVs si alguna tiene esta pista configurada como
-     * música de fondo, para avisar antes de borrarla del todo. */
-    async function findAudioUsage(url) {
-      const usedIn = [];
-      try {
-        const snap = await db.collection('portanko_tvs').get();
-        snap.forEach(doc => {
           const data = doc.data();
-          if (data.audioSettings && data.audioSettings.audioUrl === url) usedIn.push(data.name || doc.id);
-        });
-      } catch (e) { console.warn('No se pudo verificar en qué TVs está en uso la música:', e); }
-      return usedIn;
-    }
+          lastFirestoreData = data;
+          lastAppliedDay = getCurrentDayName();
 
-    async function requestDeleteAudioTrack(trackId) {
-      const track = audioRepository.find(t => t.id === trackId);
-      if (!track) return;
-      const usedIn = await findAudioUsage(track.url);
+          applyOrientation(data.orientation);
+          updateBackgroundAudio(data.audioSettings);
+          applyLegalBanner(data.legalBanner);
+          currentTransitionEffect = (data.transitionEffect && TRANSITION_EFFECTS[data.transitionEffect]) ? data.transitionEffect : DEFAULT_TRANSITION;
 
-      if (usedIn.length > 0) {
-        showConfirmModal('MÚSICA EN USO', `Esta pista está configurada como música de fondo en: ${usedIn.join(', ')}. Si la borrás, esas TVs se quedan sin audio la próxima vez que actualicen su configuración. ¿Eliminarla igual?`, () => doDeleteAudioTrack(track), true);
-        return;
-      }
-      showConfirmModal('ELIMINAR MÚSICA', `¿Eliminar "${track.title || 'esta pista'}" de la nube interna?`, () => doDeleteAudioTrack(track), true);
-    }
-
-    async function doDeleteAudioTrack(track) {
-      if (currentlyPlayingBtn) stopAudioPreview();
-      try {
-        await db.collection('portanko_audio').doc(track.id).delete();
-        if (track.storagePath) { try { await storage.ref(track.storagePath).delete(); } catch (e) { /* no crítico */ } }
-        showToast('Música eliminada de la nube interna.');
-      } catch (err) {
-        console.error(err);
-        showToast('No se pudo eliminar la música.', true);
-      }
-    }
-
-    /* =========================================================
-       REPOSITORIO GLOBAL (NUBE INTERNA COMPARTIDA)
-       ========================================================= */
-    function listenGlobalRepository() {
-      db.collection('portanko_media').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-        mediaRepository = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        renderRepository();
-        ensureRepoVideoDurations(); // completa duraciones de video faltantes en segundo plano
-      }, err => { console.error(err); showToast('No se pudo cargar la nube interna.', true); });
-    }
-
-    function renderRepository() {
-      const grid = document.getElementById('repoGrid');
-      document.getElementById('repoCounter').innerText = `${mediaRepository.length} archivo(s)`;
-
-      const searchInput = document.getElementById('repoSearch');
-      const query = (searchInput ? searchInput.value : '').trim().toLowerCase();
-      const filtered = query
-        ? mediaRepository.filter(item => (item.title || '').toLowerCase().includes(query))
-        : mediaRepository;
-
-      grid.innerHTML = "";
-
-      if (mediaRepository.length === 0) {
-        grid.innerHTML = '<div class="repo-empty">La nube interna está vacía. Subí un archivo más abajo.</div>';
-        return;
-      }
-      if (filtered.length === 0) {
-        grid.innerHTML = `<div class="repo-empty">Ningún archivo coincide con "${escapeHtml(query)}".</div>`;
-        return;
-      }
-
-      filtered.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'repo-item';
-        div.title = 'Tocar para asignar a pantallas y días';
-        div.innerHTML = `
-          <img src="${escapeHtml(item.url)}" onerror="this.src='https://via.placeholder.com/90?text=Video'">
-          <div class="repo-plus">+</div>
-          <span class="repo-tag">${escapeHtml(item.title || (item.type === 'video' ? 'Video' : 'Imagen'))}</span>
-          <button class="repo-del" title="Borrar de la nube" onclick="event.stopPropagation(); requestDeleteRepoItem('${item.id}')">×</button>`;
-        div.onclick = () => openAssignModal(item.id);
-        grid.appendChild(div);
-      });
-    }
-
-    /** Recorre TODAS las TVs (no solo la activa) buscando dónde está asignado
-     * un mediaId, para poder avisar antes de borrarlo de la nube interna. */
-    async function findMediaUsage(mediaId) {
-      const usage = []; // [{tvId, tvName, dayLabels: [...]}]
-      try {
-        const snap = await db.collection('portanko_tvs').get();
-        snap.forEach(doc => {
-          const data = doc.data();
-          if (!data.schedule) return;
-          const dayLabels = [];
-          DAYS.forEach(d => {
-            const list = data.schedule[d.id] || [];
-            if (list.some(item => item.mediaId === mediaId)) dayLabels.push(d.label);
-          });
-          if (dayLabels.length > 0) usage.push({ tvId: doc.id, tvName: data.name || doc.id, dayLabels });
-        });
-      } catch (e) { console.warn('No se pudo verificar en qué TVs está en uso el archivo:', e); }
-      return usage;
-    }
-
-    async function doDeleteRepoItem(mediaId) {
-      const item = mediaRepository.find(x => x.id === mediaId);
-      try {
-        await db.collection('portanko_media').doc(mediaId).delete();
-        if (item && item.storagePath) {
-          try { await storage.ref(item.storagePath).delete(); } catch (e) { /* no crítico */ }
+          applyPlaylistFromData(data);
+        },
+        err => {
+          console.warn("Firestore onSnapshot error:", err);
+          setOfflineBadge(true);
+          hideLoader();
+          // Si nunca hubo datos ni cache local, mostramos el aviso; si ya había
+          // contenido cargado, lo dejamos reproduciendo con lo último recibido.
+          if (!lastFirestoreData) {
+            showEmptyState("Sin conexión y sin datos en caché para esta pantalla.");
+          }
         }
-        showToast('Archivo eliminado de la nube interna.');
-      } catch (err) {
-        console.error(err);
-        showToast('No se pudo eliminar el archivo.', true);
-      }
+      );
     }
 
-    async function requestDeleteRepoItem(mediaId) {
-      const usage = await findMediaUsage(mediaId);
+    function applyPlaylistFromData(data) {
+      const newPlaylist = resolvePlaylistForToday(data);
 
-      if (usage.length > 0) {
-        const listHtml = usage.map(u => `• <strong>${escapeHtml(u.tvName)}</strong>: ${u.dayLabels.join(', ')}`).join('<br>');
-        document.getElementById('modalTitle').innerText = 'ESTE ARCHIVO ESTÁ EN USO';
-        document.getElementById('modalBody').innerHTML = `
-          <p style="margin-bottom:12px;">Todavía está asignado en:</p>
-          <p style="margin-bottom:16px; font-size:12px; color:#93c5fd; line-height:1.8;">${listHtml}</p>
-          <p>Si lo eliminás de la nube ahora, esas pantallas van a dejar de poder mostrarlo (la imagen o video no va a cargar). Te recomendamos desasignarlo primero desde cada día. ¿Igual querés eliminarlo?</p>`;
-        document.getElementById('modalActions').innerHTML = `
-          <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-          <button class="btn-modal-danger" id="forceDeleteRepoBtn">Eliminar de todas formas</button>`;
-        document.getElementById('forceDeleteRepoBtn').onclick = () => { closeModal(); doDeleteRepoItem(mediaId); };
-        document.getElementById('customModal').classList.add('active');
-        return;
+      if (JSON.stringify(newPlaylist) === JSON.stringify(playlist)) {
+        return; // nada cambió, no reiniciamos el slider
       }
 
-      showConfirmModal('ELIMINAR DE LA NUBE', 'Este archivo no está asignado a ninguna pantalla actualmente. ¿Confirmás que querés eliminarlo definitivamente?', () => doDeleteRepoItem(mediaId), true);
-    }
+      playlist = newPlaylist;
+      currentIndex = 0;
+      consecutiveErrors = 0;
 
-    /* =========================================================
-       POPUP DE ASIGNACIÓN: elegir TVs + días para un archivo
-       ========================================================= */
-    function openAssignModal(mediaId) {
-      const media = mediaRepository.find(m => m.id === mediaId);
-      if (!media) return;
-
-      const tvCheckboxes = tvsList.length
-        ? tvsList.map(tv => `<label><input type="checkbox" class="assign-tv" value="${tv.id}" ${tv.id === currentTV ? 'checked' : ''}> ${escapeHtml(tv.name)}</label>`).join('')
-        : '<small style="color:#64748b;">No hay TVs creadas todavía.</small>';
-
-      const dayCheckboxes = DAYS.map(d => `<label><input type="checkbox" class="assign-day" value="${d.id}" ${d.id === currentDay ? 'checked' : ''}> ${d.label}</label>`).join('');
-
-      document.getElementById('modalTitle').innerText = 'ASIGNAR CONTENIDO A PANTALLAS Y DÍAS';
-      document.getElementById('modalBody').innerHTML = `
-        <div style="display:flex; gap:12px; margin-bottom:16px; align-items:center;">
-          <img src="${escapeHtml(media.url)}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;border:1px solid var(--border);" onerror="this.src='https://via.placeholder.com/70?text=Video'">
-          <div>
-            <strong style="font-size:13px;">${escapeHtml(media.title || 'Sin título')}</strong><br>
-            <small style="color:#93c5fd;">${media.type === 'video' ? 'Video' : 'Imagen'}</small>
-          </div>
-        </div>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
-          <div>
-            <label style="margin-bottom:8px;">Pantallas</label>
-            <div class="checkbox-scroll">${tvCheckboxes}</div>
-          </div>
-          <div>
-            <label style="margin-bottom:8px;">Días</label>
-            <div class="checkbox-scroll">${dayCheckboxes}</div>
-          </div>
-        </div>
-        <p class="section-subtitle" style="margin-bottom:12px;">Se agrega esta imagen/video a cada combinación de pantalla + día que marques. Después podés ordenar cada día por separado.</p>
-        <div class="form-row">
-          <div style="flex:1;">
-            <label>Duración (s)</label>
-            <input type="number" id="assignDuration" value="${media.duration || 7}" min="1" ${media.type === 'video' ? 'disabled' : ''}>
-          </div>
-          <div style="flex:1;">
-            <label>Rotación</label>
-            <select id="assignRotation">
-              <option value="0" ${(media.rotation || 0) === 0 ? 'selected' : ''}>0°</option>
-              <option value="90" ${media.rotation === 90 ? 'selected' : ''}>90°</option>
-              <option value="180" ${media.rotation === 180 ? 'selected' : ''}>180°</option>
-              <option value="270" ${media.rotation === 270 ? 'selected' : ''}>270°</option>
-            </select>
-          </div>
-          <div style="flex:1;">
-            <label>Relleno</label>
-            <select id="assignFit">
-              <option value="cover" ${(media.fit || 'cover') === 'cover' ? 'selected' : ''}>Cover</option>
-              <option value="contain" ${media.fit === 'contain' ? 'selected' : ''}>Contain</option>
-            </select>
-          </div>
-        </div>
-        ${media.type !== 'video' ? `
-        <div class="form-row checkline">
-          <label style="margin:0; text-transform:none;"><input type="checkbox" id="assignKenBurns" style="width:auto;" ${media.kenBurns ? 'checked' : ''}> Efecto Ken Burns (acercamiento suave)</label>
-        </div>` : ''}`;
-      document.getElementById('modalActions').innerHTML = `
-        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="btn-modal-confirm" onclick="confirmAssignMedia('${mediaId}')">Asignar</button>`;
-      document.getElementById('customModal').classList.add('active');
-    }
-
-    async function confirmAssignMedia(mediaId) {
-      const media = mediaRepository.find(m => m.id === mediaId);
-      if (!media) return closeModal();
-
-      const tvIds = Array.from(document.querySelectorAll('.assign-tv:checked')).map(c => c.value);
-      const dayIds = Array.from(document.querySelectorAll('.assign-day:checked')).map(c => c.value);
-      if (tvIds.length === 0 || dayIds.length === 0) {
-        showToast('Elegí al menos una pantalla y un día.', true);
-        return;
-      }
-
-      const duration = parseInt(document.getElementById('assignDuration').value) || 7;
-      const rotation = parseInt(document.getElementById('assignRotation').value) || 0;
-      const fit = document.getElementById('assignFit').value;
-      const kenBurnsEl = document.getElementById('assignKenBurns');
-      const kenBurns = media.type !== 'video' && !!(kenBurnsEl && kenBurnsEl.checked);
-
-      closeModal();
-      const loader = document.getElementById('uploadLoader');
-      document.getElementById('uploadLoaderText').innerText = 'Asignando contenido a las pantallas seleccionadas...';
-      loader.classList.add('active');
-
-      try {
-        for (const tvId of tvIds) {
-          const ref = db.collection('portanko_tvs').doc(tvId);
-          const snap = await ref.get();
-          if (!snap.exists) continue;
-          const data = ensureScheduleShape(snap.data());
-          dayIds.forEach(dayId => {
-            data.schedule[dayId].push({
-              id: uid(),
-              mediaId: media.id,
-              title: media.title || '',
-              url: media.url,
-              type: media.type,
-              duration: media.type === 'video' ? null : duration,
-              durationSeconds: media.type === 'video' ? (media.durationSeconds ?? null) : null,
-              rotation, fit, kenBurns,
-              badgeText: media.badgeText || null,
-              active: true
-            });
-          });
-          await ref.set({ schedule: data.schedule }, { merge: true });
-          if (tvId === currentTV) tvData.schedule = data.schedule;
-        }
-        showToast(`Asignado a ${tvIds.length} pantalla(s) y ${dayIds.length} día(s).`);
-        renderDaySchedule();
-        renderWeekDashboard();
-      } catch (err) {
-        console.error(err);
-        showToast('Error al asignar el contenido.', true);
-      } finally {
-        loader.classList.remove('active');
-        document.getElementById('uploadLoaderText').innerText = 'Subiendo archivo al repositorio corporativo...';
-      }
-    }
-
-    /* =========================================================
-       PROGRAMACIÓN DEL DÍA ACTIVO (con arrastre para reordenar)
-       ========================================================= */
-    function computeDayStats(dayList) {
-      const activeList = dayList.filter(i => i.active !== false);
-      const inactiveCount = dayList.length - activeList.length;
-      const vids = activeList.filter(i => i.type === 'video').length;
-      const imgs = activeList.length - vids;
-      const totalSeconds = activeList.filter(i => i.type !== 'video').reduce((s, i) => s + (i.duration || 7), 0);
-      return { total: activeList.length, imgs, vids, totalSeconds, inactiveCount };
-    }
-
-    function renderDaySchedule() {
-      const container = document.getElementById('playlistContainer');
-      const dayList = tvData.schedule ? (tvData.schedule[currentDay] || []) : [];
-      const stats = computeDayStats(dayList);
-      document.getElementById('statsCounter').innerText =
-        `${stats.total} ítem(s) en pantalla · ${stats.imgs} img · ${stats.vids} video(s) · ~${stats.totalSeconds}s de imágenes` +
-        (stats.inactiveCount ? ` · ${stats.inactiveCount} desactivado(s)` : '');
-      renderWeekDashboard();
-
-      container.innerHTML = "";
-      if (dayList.length === 0) {
-        container.innerHTML = `<p style="color:#93c5fd; font-size:13px;">No hay contenido programado para ${currentDay}. Tocá un archivo de la nube interna para asignarlo.</p>`;
-        return;
-      }
-
-      dayList.forEach((item, index) => {
-        const isActive = item.active !== false; // por defecto (campo ausente) se considera activo
-        const div = document.createElement('div');
-        div.className = `playlist-item ${isActive ? '' : 'item-inactive'}`;
-        div.draggable = true;
-        div.dataset.index = index;
-
-        div.innerHTML = `
-          <div style="display:flex; align-items:center; min-width:0;">
-            <span class="drag-handle" title="Arrastrar para reordenar">☰</span>
-            <span class="order-badge">${index + 1}</span>
-            <img src="${escapeHtml(item.url)}" class="playlist-thumb" style="transform: rotate(${item.rotation || 0}deg)" onerror="this.src='https://via.placeholder.com/45?text=Video'">
-            <div style="min-width:0;">
-              <strong style="font-size:12px; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:210px;">${escapeHtml(item.title || 'Slide ' + (index + 1))}</strong>
-              <small style="color:#93c5fd;">${item.type === 'video' ? 'Video MP4' : (item.duration || 7) + 's'} | Girado: ${item.rotation || 0}° | ${item.fit || 'cover'}${item.badgeText ? ' | ' + escapeHtml(item.badgeText) : ''}${!isActive ? ' <span class="inactive-tag">· desactivado, no se muestra en la TV</span>' : ''}</small>
-            </div>
-          </div>
-          <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
-            <button class="pl-btn ${isActive ? 'toggle-on' : 'toggle-off'}" onclick="toggleItemActive(${index})" title="${isActive ? 'Click para desactivar (dejar de mostrar)' : 'Click para activar (volver a mostrar)'}">${isActive ? 'Activo' : 'Inactivo'}</button>
-            <button class="pl-btn" onclick="moveItem(${index}, -1)" ${index === 0 ? 'disabled' : ''} title="Subir orden">↑</button>
-            <button class="pl-btn" onclick="moveItem(${index}, 1)" ${index === dayList.length - 1 ? 'disabled' : ''} title="Bajar orden">↓</button>
-            <button class="pl-btn edit" onclick="openEditItemModal(${index})">Editar</button>
-            <button class="pl-btn del" onclick="requestDeleteItem(${index})">X</button>
-          </div>`;
-
-        div.addEventListener('dragstart', () => { dragFromIndex = index; div.classList.add('dragging'); });
-        div.addEventListener('dragend', () => { div.classList.remove('dragging'); dragFromIndex = null; });
-        div.addEventListener('dragover', e => { e.preventDefault(); div.classList.add('drag-over'); });
-        div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
-        div.addEventListener('drop', e => {
-          e.preventDefault();
-          div.classList.remove('drag-over');
-          if (dragFromIndex === null || dragFromIndex === index) return;
-          reorderDayList(dragFromIndex, index);
-        });
-
-        container.appendChild(div);
-      });
-    }
-
-    /** Prende/apaga un ítem sin borrarlo ni perder su configuración. Un ítem
-     * desactivado deja de mostrarse en la TV correspondiente, pero conserva
-     * duración, rotación, insignia, etc. para poder reactivarlo más tarde. */
-    async function toggleItemActive(index) {
-      const item = tvData.schedule[currentDay][index];
-      item.active = item.active === false ? true : false;
-      renderDaySchedule(); // respuesta visual inmediata
-      try {
-        await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
-      } catch (e) {
-        console.error(e);
-        showToast('No se pudo guardar el cambio.', true);
-      }
-    }
-
-    async function reorderDayList(fromIndex, toIndex) {
-      const dayList = tvData.schedule[currentDay];
-      const moved = dayList.splice(fromIndex, 1)[0];
-      dayList.splice(toIndex, 0, moved);
-      renderDaySchedule(); // respuesta visual inmediata
-      await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
-    }
-
-    async function moveItem(index, direction) {
-      const dayList = tvData.schedule[currentDay] || [];
-      const newIndex = index + direction;
-      if (newIndex < 0 || newIndex >= dayList.length) return;
-      await reorderDayList(index, newIndex);
-    }
-
-    function openEditItemModal(index) {
-      const item = tvData.schedule[currentDay][index];
-      document.getElementById('modalTitle').innerText = "EDITAR PROPIEDADES DE SLIDE";
-      document.getElementById('modalBody').innerHTML = `
-        <div style="margin-bottom:12px;">
-          <label>Título / Referencia</label>
-          <input type="text" id="editTitle" value="${escapeHtml(item.title || '')}">
-        </div>
-        <div style="margin-bottom:12px;">
-          <label>Duración en Segundos ${item.type === 'video' ? '(no aplica a videos)' : ''}</label>
-          <input type="number" id="editDuration" value="${item.duration || 7}" min="1" ${item.type === 'video' ? 'disabled' : ''}>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label>Rotación</label>
-          <select id="editRotation">
-            <option value="0" ${(item.rotation || 0) === 0 ? 'selected' : ''}>Normal (0°)</option>
-            <option value="90" ${item.rotation === 90 ? 'selected' : ''}>Girar 90°</option>
-            <option value="180" ${item.rotation === 180 ? 'selected' : ''}>Girar 180°</option>
-            <option value="270" ${item.rotation === 270 ? 'selected' : ''}>Girar 270°</option>
-          </select>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label>Modo de Relleno</label>
-          <select id="editFit">
-            <option value="cover" ${(item.fit || 'cover') === 'cover' ? 'selected' : ''}>Rellenar (Cover)</option>
-            <option value="contain" ${item.fit === 'contain' ? 'selected' : ''}>Ajustar Entera (Contain)</option>
-          </select>
-        </div>
-        <div>
-          <label>Insignia</label>
-          <select id="editBadge">
-            <option value="" ${!item.badgeText ? 'selected' : ''}>-- Sin Insignia --</option>
-            <option value="OPORTUNIDAD" ${item.badgeText === 'OPORTUNIDAD' ? 'selected' : ''}>OPORTUNIDAD</option>
-            <option value="VENDIDO" ${item.badgeText === 'VENDIDO' ? 'selected' : ''}>VENDIDO</option>
-            <option value="EN ALQUILER" ${item.badgeText === 'EN ALQUILER' ? 'selected' : ''}>EN ALQUILER</option>
-            <option value="CONSULTA LEGAL" ${item.badgeText === 'CONSULTA LEGAL' ? 'selected' : ''}>CONSULTA LEGAL</option>
-          </select>
-        </div>
-        ${item.type !== 'video' ? `
-        <div style="margin-top:12px;">
-          <label style="display:flex; align-items:center; gap:8px; text-transform:none;">
-            <input type="checkbox" id="editKenBurns" style="width:auto;" ${item.kenBurns ? 'checked' : ''}>
-            Efecto Ken Burns (acercamiento suave durante la exhibición)
-          </label>
-        </div>` : ''}`;
-      document.getElementById('modalActions').innerHTML = `
-        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
-        <button class="btn-modal-confirm" onclick="saveEditedSlide(${index})">Guardar Cambios</button>`;
-      document.getElementById('customModal').classList.add('active');
-    }
-
-    async function saveEditedSlide(index) {
-      const item = tvData.schedule[currentDay][index];
-      item.title = document.getElementById('editTitle').value;
-      item.duration = parseInt(document.getElementById('editDuration').value) || 7;
-      item.rotation = parseInt(document.getElementById('editRotation').value) || 0;
-      item.fit = document.getElementById('editFit').value;
-      item.badgeText = document.getElementById('editBadge').value || null;
-      const kenBurnsEl = document.getElementById('editKenBurns');
-      item.kenBurns = kenBurnsEl ? kenBurnsEl.checked : false;
-      closeModal();
-      await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
-      showToast('Slide actualizado.');
-    }
-
-    function requestDeleteItem(index) {
-      showConfirmModal('CONFIRMAR ELIMINACIÓN', `¿Quitar este ítem de la programación de ${currentDay}?`, async () => {
-        tvData.schedule[currentDay].splice(index, 1);
-        await db.collection('portanko_tvs').doc(currentTV).set({ schedule: tvData.schedule }, { merge: true });
-        showToast('Ítem eliminado de la programación.');
-      }, true);
-    }
-
-    /* =========================================================
-       SUBIDA DE ARCHIVOS NUEVOS A LA NUBE GLOBAL
-       ========================================================= */
-    async function uploadMedia() {
-      const fileInput = document.getElementById('mediaFileInput');
-      const file = fileInput.files[0];
-      if (!file) return showToast('Seleccioná una imagen o video primero.', true);
-
-      const loader = document.getElementById('uploadLoader');
-      const uploadBtn = document.getElementById('uploadBtn');
-      document.getElementById('uploadLoaderText').innerText = 'Preparando archivo...';
-      loader.classList.add('active');
-      uploadBtn.disabled = true;
-
-      const isVideo = file.type.includes('video');
-
-      try {
-        // Para videos, medimos su duración real (localmente, antes de subir) para que
-        // el dashboard semanal pueda sumar minutos reales desde el primer momento.
-        const measuredDurationSeconds = isVideo ? await measureLocalVideoDuration(file) : null;
-
-        // Para imágenes, comprimimos/redimensionamos localmente antes de subir
-        // (evita gastar espacio con fotos de celular sin sentido para una TV).
-        const fileToUpload = isVideo ? file : await compressImageFile(file);
-
-        document.getElementById('uploadLoaderText').innerText = 'Subiendo archivo al repositorio corporativo...';
-        const storagePath = `portanko/global/${Date.now()}_${fileToUpload.name}`;
-        const storageRef = storage.ref(storagePath);
-        const snapshot = await storageRef.put(fileToUpload);
-        const downloadURL = await snapshot.ref.getDownloadURL();
-
-        const newMedia = {
-          title: document.getElementById('itemTitle').value || file.name,
-          url: downloadURL,
-          storagePath,
-          type: isVideo ? 'video' : 'image',
-          duration: isVideo ? null : (parseInt(document.getElementById('mediaDuration').value) || 7),
-          durationSeconds: measuredDurationSeconds,
-          rotation: parseInt(document.getElementById('itemRotationSelect').value) || 0,
-          fit: document.getElementById('itemFitSelect').value || 'cover',
-          badgeText: document.getElementById('badgeSelect').value || null,
-          kenBurns: !isVideo && !!document.getElementById('kenBurnsCheckbox')?.checked,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        const docRef = await db.collection('portanko_media').add(newMedia);
-
-        fileInput.value = "";
-        document.getElementById('itemTitle').value = "";
-        showToast('Archivo subido a la nube interna.');
-
-        // Abrimos directamente el asignador para elegir pantallas y días
-        setTimeout(() => openAssignModal(docRef.id), 300);
-      } catch (err) {
-        console.error(err);
-        showToast('Error al subir el archivo.', true);
-      } finally {
-        loader.classList.remove('active');
-        uploadBtn.disabled = false;
-      }
-    }
-
-    /* =========================================================
-       ALTA / AJUSTES GENERALES DE TV
-       ========================================================= */
-    function addNewTV() {
-      const tvName = prompt("Nombre de la nueva TV (ej. TV 2 - Recepción):");
-      if (!tvName) return;
-      const tvId = tvName.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
-
-      showConfirmModal('CONFIRMAR CREACIÓN', `¿Deseás dar de alta la pantalla '${tvName}'?`, async () => {
-        await db.collection('portanko_tvs').doc(tvId).set({
-          name: tvName,
-          orientation: 270,
-          tvSize: "50",
-          audioSettings: { enabled: false, audioUrl: "", volume: 0.5 },
-          legalBanner: { text: "Portanko Abogados e Inmobiliaria", show: true },
-          schedule: emptyScheduleTemplate()
-        });
-        copyTVUrl(tvId);
-        showToast(`TV '${tvName}' creada. URL copiada.`);
-        selectTV(tvId);
-      });
-    }
-
-    function requestSaveTVConfig() {
-      showConfirmModal('GUARDAR AJUSTES', `¿Guardar la configuración general de ${currentTV}?`, async () => {
-        const orientation = parseInt(document.getElementById('orientationSelect').value);
-        const tvSize = document.getElementById('sizeSelect').value;
-        const enabled = document.getElementById('audioEnabled').value === "true";
-        const audioUrl = document.getElementById('audioUrl').value.trim();
-        let volume = parseFloat(document.getElementById('audioVolume').value);
-        if (isNaN(volume)) volume = 0.5;
-        volume = Math.min(1, Math.max(0, volume));
-        const bannerText = document.getElementById('legalBannerText').value || "Portanko Abogados e Inmobiliaria";
-        const showBanner = document.getElementById('showLegalBanner').value === "true";
-
-        await db.collection('portanko_tvs').doc(currentTV).set({
-          orientation, tvSize,
-          audioSettings: { enabled, audioUrl, volume },
-          legalBanner: { text: bannerText, show: showBanner }
-        }, { merge: true });
-        showToast('Ajustes generales guardados.');
-      });
-    }
-
-    function requestSaveTransitionEffect() {
-      const effect = document.getElementById('transitionEffectSelect').value;
-      showConfirmModal('GUARDAR TRANSICIÓN', `¿Aplicar este efecto de transición a ${currentTV}?`, async () => {
-        try {
-          await db.collection('portanko_tvs').doc(currentTV).set({ transitionEffect: effect }, { merge: true });
-          showToast('Efecto de transición guardado.');
-        } catch (e) {
-          console.error(e);
-          showToast('No se pudo guardar el efecto.', true);
-        }
-      });
-    }
-
-    /** Trae la palabra clave global vigente y la muestra en el campo correspondiente. */
-    async function loadAccessKeyword() {
-      const input = document.getElementById('accessKeywordInput');
-      if (!input) return;
-      try {
-        const doc = await db.collection('portanko_config').doc('access').get();
-        input.value = (doc.exists && doc.data().keyword) ? doc.data().keyword : '';
-        input.placeholder = doc.exists && doc.data().keyword ? '' : 'Todavía no configurada — cualquiera pasa sin palabra clave';
-      } catch (e) {
-        console.warn('No se pudo cargar la palabra clave:', e);
-        input.placeholder = 'No se pudo cargar';
-      }
-    }
-
-    function requestSaveKeyword() {
-      const value = document.getElementById('accessKeywordInput').value.trim();
-      if (!value) {
-        showToast('La palabra clave no puede quedar vacía.', true);
-        return;
-      }
-      showConfirmModal('ACTUALIZAR PALABRA CLAVE', 'Esto cambia el acceso para TODO el equipo a partir de ahora. ¿Confirmás el cambio?', async () => {
-        try {
-          await db.collection('portanko_config').doc('access').set({ keyword: value }, { merge: true });
-          showToast('Palabra clave actualizada.');
-        } catch (e) {
-          console.error(e);
-          showToast('No se pudo guardar la palabra clave.', true);
-        }
-      });
-    }
-
-    function logout() {
-      auth.signOut().finally(() => { window.location.href = "login.html"; });
-    }
-
-    /* =========================================================
-       INICIO — se registra al final del script (con todo ya definido)
-       y solo arranca el panel una vez confirmado el login.
-       IMPORTANTE: esto por sí solo NO asegura la base de datos — hace falta
-       además configurar las Reglas de Seguridad de Firestore/Storage para
-       exigir "request.auth != null" en escritura (y lectura si corresponde).
-       Ver instrucciones al final de la respuesta del chat.
-       ========================================================= */
-    function startApp() {
-      if (appStarted) return; // evita doble arranque si Firebase Auth dispara el evento más de una vez
-      appStarted = true;
-      renderDaysBar();
-      listenAllTVs();
-      listenGlobalRepository();
-      listenGlobalAudioRepository();
-      loadTVConfig();
-      loadAccessKeyword();
-      // Refresca los puntos de estado ("hace X min") aunque no llegue data nueva de Firestore.
-      setInterval(renderTVBar, 60000);
-    }
-
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        window.location.href = "login.html";
+      if (playlist.length > 0) {
+        hideEmptyState();
+        renderCurrentSlide();
       } else {
-        startApp();
+        showEmptyState(`No hay medios cargados para hoy (${getCurrentDayName()}) en "${TV_ID}".`);
       }
-    });
+    }
+
+    /* Revisa cada 30s si cambió el día calendario, para no depender de que
+       Firestore dispare un nuevo evento al cruzar la medianoche. */
+    setInterval(() => {
+      const today = getCurrentDayName();
+      if (today !== lastAppliedDay && lastFirestoreData) {
+        lastAppliedDay = today;
+        applyPlaylistFromData(lastFirestoreData);
+      }
+    }, 30000);
+
+    /* Recarga automática diaria: una TV puede quedar semanas prendida sin
+       reiniciarse, y con el tiempo cualquier navegador acumula memoria. Para
+       evitar que eso termine en un cuelgue, recargamos la página una vez por
+       día a una hora de bajo tránsito (por defecto, 4:00 AM hora local del TV). */
+    const AUTO_RELOAD_HOUR = 4;
+    let lastReloadCheckKey = '';
+    setInterval(() => {
+      const now = new Date();
+      const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}`;
+      if (key === lastReloadCheckKey) return;
+      lastReloadCheckKey = key;
+      if (now.getHours() === AUTO_RELOAD_HOUR && now.getMinutes() === 0) {
+        location.reload();
+      }
+    }, 20000);
+
+    /* =========================================================
+       RENDERIZADO DE SLIDES
+       ========================================================= */
+    /** Al reemplazar un slide (sea por avance normal o por un cambio de contenido
+     * que llegó desde Firestore mientras algo se estaba reproduciendo), hay que
+     * "desconectar" los eventos del elemento saliente. Si no, un video que sigue
+     * reproduciéndose visualmente durante el crossfade podría disparar su propio
+     * "onended" más tarde y adelantar el índice de la playlist por las suyas,
+     * desincronizando lo que se ve. Lo dejamos correr visualmente (para no cortar
+     * el crossfade) pero ya no puede volver a llamar a nextSlide().
+     */
+    function neutralizeOutgoingMedia(prevWrapper) {
+      if (!prevWrapper) return;
+      const media = prevWrapper.querySelector('video');
+      if (media) { media.onended = null; media.onerror = null; }
+    }
+
+    /** Libera por completo los recursos de un elemento ya retirado de pantalla. */
+    function stopAndRemove(el) {
+      if (!el) return;
+      const media = el.querySelector('video');
+      if (media) {
+        try { media.pause(); media.removeAttribute('src'); media.load(); } catch (e) { /* no crítico */ }
+      }
+      el.remove();
+    }
+
+    function renderCurrentSlide() {
+      if (playlist.length === 0) return;
+      if (stepTimeout) clearTimeout(stepTimeout);
+
+      const item = playlist[currentIndex];
+      const nextItem = playlist[(currentIndex + 1) % playlist.length];
+      const prevElement = container.querySelector(".media-wrapper.active");
+      neutralizeOutgoingMedia(prevElement);
+      const rot = item.rotation || 0;
+      const fit = item.fit || 'cover';
+      const effect = TRANSITION_EFFECTS[currentTransitionEffect] || TRANSITION_EFFECTS[DEFAULT_TRANSITION];
+
+      // Capa externa: sólo transición (el efecto fx-* elegido). Capa interna: sólo rotación.
+      const wrapper = document.createElement('div');
+      wrapper.className = `media-wrapper ${effect.cls}`;
+      const rotator = document.createElement('div');
+      rotator.className = `media-rotator rot-${rot}`;
+
+      const activateWrapper = () => {
+        rotator.appendChild(mediaEl);
+        wrapper.appendChild(rotator);
+        container.appendChild(wrapper);
+        requestAnimationFrame(() => {
+          wrapper.classList.add("active");
+          setTimeout(() => stopAndRemove(prevElement), effect.duration);
+          hideLoader();
+          hideEmptyState();
+          firstRenderDone = true;
+          consecutiveErrors = 0;
+          preloadItem(nextItem); // precarga el siguiente mientras se muestra este
+          updateContentBadge(item.badgeText);
+        });
+      };
+
+      const handleItemError = () => {
+        consecutiveErrors++;
+        if (consecutiveErrors >= Math.max(MAX_CONSECUTIVE_ERRORS, playlist.length)) {
+          showEmptyState("No se pudo reproducir el contenido cargado (verificar URLs).");
+          return;
+        }
+        nextSlide();
+      };
+
+      let mediaEl;
+      if (item.type === 'video') {
+        mediaEl = document.createElement('video');
+        mediaEl.src = item.url;
+        mediaEl.className = `fit-${fit}`;
+        mediaEl.autoplay = true;
+        mediaEl.muted = true;
+        mediaEl.playsInline = true;
+        mediaEl.oncanplaythrough = activateWrapper;
+        mediaEl.onended = () => { nextSlide(); };
+        mediaEl.onerror = handleItemError;
+      } else {
+        mediaEl = document.createElement('img');
+        mediaEl.src = item.url;
+        mediaEl.className = `fit-${fit}`;
+        const durationMs = (item.duration || 7) * 1000;
+        if (item.kenBurns) {
+          // El zoom dura la exhibición completa más el tiempo del fundido de entrada,
+          // para que el acercamiento se note incluso durante el crossfade.
+          mediaEl.classList.add('ken-burns');
+          mediaEl.style.animationDuration = ((durationMs + effect.duration) / 1000) + 's';
+        }
+        mediaEl.onload = () => {
+          activateWrapper();
+          stepTimeout = setTimeout(() => { nextSlide(); }, durationMs);
+        };
+        mediaEl.onerror = handleItemError;
+      }
+    }
+
+    function nextSlide() {
+      if (playlist.length === 0) return;
+      currentIndex = (currentIndex + 1) % playlist.length;
+      renderCurrentSlide();
+    }
+
+    /* =========================================================
+       HEARTBEAT: avisa periódicamente que esta TV está en línea, para
+       que el panel admin pueda mostrar "conectada" / "sin señal".
+       ========================================================= */
+    function sendHeartbeat() {
+      try {
+        db.collection("portanko_tvs").doc(TV_ID).set({
+          status: {
+            lastSeenIso: new Date().toISOString(),
+            lastSeenServer: firebase.firestore.FieldValue.serverTimestamp()
+          }
+        }, { merge: true }).catch(() => { /* si falla, se reintenta en el próximo ciclo */ });
+      } catch (e) { /* no crítico: el heartbeat nunca debe interrumpir la reproducción */ }
+    }
+
+    /* =========================================================
+       INICIO
+       ========================================================= */
+    listenTVConfiguration();
+    sendHeartbeat();
+    setInterval(sendHeartbeat, 60000);
+
+    // Watchdog: si a los 20s no renderizó nada (config vacía o URL colgada),
+    // muestra el estado vacío en lugar de dejar el loader infinito.
+    setTimeout(() => {
+      if (!firstRenderDone) {
+        showEmptyState(`Esperando contenido para "${TV_ID}"...`);
+      }
+    }, 20000);
   </script>
 </body>
 </html>
