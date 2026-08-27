@@ -23,29 +23,56 @@
 
     /* ---------- Fondo futurista fijo: grilla + orbes, siempre detrás del contenido ---------- */
     .bg-void {
-      position: fixed; inset: 0; z-index: -3;
+      position: fixed; inset: 0; z-index: -5;
       background:
         radial-gradient(ellipse 70% 50% at 15% -10%, rgba(56,225,209,0.08), transparent 55%),
         radial-gradient(ellipse 60% 45% at 100% 100%, rgba(179,39,45,0.09), transparent 55%),
         linear-gradient(160deg, #04060c 0%, #0a0f1c 100%);
     }
-    .bg-grid {
-      position: fixed; inset: -50px; z-index: -2; opacity: 0.22;
+    /* Grilla en dos capas con distinta escala/velocidad = sensación de profundidad (paralaje) */
+    .bg-grid { position: fixed; inset: -50px; z-index: -4; opacity: 0.22;
       background-image:
         linear-gradient(rgba(56,225,209,0.08) 1px, transparent 1px),
         linear-gradient(90deg, rgba(56,225,209,0.08) 1px, transparent 1px);
       background-size: 46px 46px;
       animation: gridDriftAdmin 32s linear infinite;
     }
+    .bg-grid-far { position: fixed; inset: -80px; z-index: -5; opacity: 0.12;
+      background-image:
+        linear-gradient(rgba(179,39,45,0.10) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(179,39,45,0.10) 1px, transparent 1px);
+      background-size: 130px 130px;
+      animation: gridDriftAdminFar 55s linear infinite reverse;
+    }
     @keyframes gridDriftAdmin { from { background-position: 0 0, 0 0; } to { background-position: 46px 92px, 46px 92px; } }
-    .bg-orb { position: fixed; z-index: -1; border-radius: 50%; filter: blur(90px); pointer-events: none; }
+    @keyframes gridDriftAdminFar { from { background-position: 0 0, 0 0; } to { background-position: 130px 65px, 130px 65px; } }
+
+    .bg-orb { position: fixed; z-index: -3; border-radius: 50%; filter: blur(90px); pointer-events: none; }
     .bg-orb--a { width: 480px; height: 480px; top: -160px; left: -120px; background: radial-gradient(circle, rgba(56,225,209,0.10), transparent 70%); animation: orbFloatAdminA 30s ease-in-out infinite; }
     .bg-orb--b { width: 420px; height: 420px; bottom: -140px; right: -100px; background: radial-gradient(circle, rgba(179,39,45,0.10), transparent 70%); animation: orbFloatAdminB 34s ease-in-out infinite; }
+    .bg-orb--c { width: 300px; height: 300px; top: 40%; right: 15%; background: radial-gradient(circle, rgba(56,225,209,0.06), transparent 70%); animation: orbFloatAdminC 24s ease-in-out infinite; }
     @keyframes orbFloatAdminA { 0%,100% { transform: translate(0,0); } 50% { transform: translate(70px,50px); } }
     @keyframes orbFloatAdminB { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-60px,-40px); } }
-    @media (prefers-reduced-motion: reduce) { .bg-grid, .bg-orb { animation: none !important; } }
+    @keyframes orbFloatAdminC { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-40px,30px) scale(1.15); } }
 
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding: 16px; margin-bottom: 24px; background: rgba(2, 6, 23, 0.6); border-radius: 8px; backdrop-filter: blur(10px); }
+    /* Barrido horizontal muy sutil, tipo radar de vigilancia — refuerza el tema "control central" */
+    .bg-scan-admin {
+      position: fixed; left: 0; right: 0; height: 220px; z-index: -2;
+      background: linear-gradient(180deg, transparent, rgba(56,225,209,0.035), transparent);
+      animation: scanSweepAdmin 14s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes scanSweepAdmin { 0% { top: -220px; } 100% { top: 100vh; } }
+
+    @media (prefers-reduced-motion: reduce) { .bg-grid, .bg-grid-far, .bg-orb, .bg-scan-admin { animation: none !important; } }
+
+    .header { position: relative; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding: 16px; margin-bottom: 24px; background: rgba(2, 6, 23, 0.6); border-radius: 8px; backdrop-filter: blur(10px); }
+    .header::before, .header::after {
+      content: ''; position: absolute; top: -1px; width: 22px; height: 10px;
+      border-top: 2px solid var(--cyan); opacity: 0.7;
+    }
+    .header::before { left: -1px; border-left: 2px solid var(--cyan); border-top-left-radius: 6px; }
+    .header::after { right: -1px; border-right: 2px solid var(--cyan); border-top-right-radius: 6px; }
     .header h2 { font-size: 18px; letter-spacing: 0.5px; }
 
     .motion-icon { width: 20px; height: 20px; display: inline-block; vertical-align: middle; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -62,7 +89,26 @@
     .tv-btn-wrapper:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 20px -3px rgba(153, 27, 27, 0.4); }
     .tv-btn-wrapper.active { border-color: #ef4444; box-shadow: 0 0 20px rgba(153, 27, 27, 0.7); background: linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%); }
     .tv-btn { background: transparent; border: none; color: var(--text); padding: 10px 14px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-    .tv-status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; box-shadow: 0 0 6px currentColor; }
+
+    /* Punto de estado: "en vivo" (verde) parpadea con un anillo tipo radar;
+       idle (amarillo) y offline (rojo/gris) quedan fijos, sin animación. */
+    .tv-status-dot { position: relative; width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .tv-status-dot.status-live::before {
+      content: ''; position: absolute; inset: -6px; border-radius: 50%;
+      border: 1.5px solid currentColor; opacity: 0.7;
+      animation: dotPing 1.8s cubic-bezier(0,0,0.2,1) infinite;
+    }
+    @keyframes dotPing { 0% { transform: scale(0.5); opacity: 0.8; } 100% { transform: scale(2.1); opacity: 0; } }
+
+    /* Insignia de alerta: aparece SOLO cuando una TV está offline/nunca se conectó */
+    .tv-alert-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 15px; height: 15px; border-radius: 50%; background: #ef4444; color: #fff;
+      font-size: 10px; font-weight: 800; flex-shrink: 0; cursor: default;
+      animation: alertPulse 1.7s ease-in-out infinite;
+    }
+    @keyframes alertPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
     .flaticon-copy-btn { background: rgba(15, 23, 42, 0.8); border: none; border-left: 1px solid var(--border); color: var(--cyan); padding: 10px 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
     .flaticon-copy-btn:hover { background: var(--cyan); color: #020617; }
 
@@ -190,9 +236,12 @@
 <body>
 
   <div class="bg-void"></div>
+  <div class="bg-grid-far"></div>
   <div class="bg-grid"></div>
   <div class="bg-orb bg-orb--a"></div>
   <div class="bg-orb bg-orb--b"></div>
+  <div class="bg-orb bg-orb--c"></div>
+  <div class="bg-scan-admin"></div>
 
   <div class="header">
     <h2>PORTANKO - Control Central Multi-TV</h2>
@@ -890,17 +939,21 @@
       return `hace ${diffD}d`;
     }
 
-    /** Color del punto de estado: verde = recién vista, amarillo = un rato sin
-     * verse, rojo = hace mucho, gris = nunca envió señal. */
+    /** Color + nivel del estado: "live" (verde, en vivo, parpadea) = vista hace
+     * poco; "idle" (amarillo, fijo) = un rato sin verse; "offline" (rojo o gris,
+     * fijo) = hace mucho o nunca se conectó — este último nivel es el que
+     * dispara la insignia de alerta y el aviso. */
     function tvStatusInfo(status) {
       const iso = status && status.lastSeenIso;
-      if (!iso) return { color: '#64748b', label: 'Nunca se conectó' };
+      if (!iso) return { color: '#64748b', label: 'Nunca se conectó — no está mostrando contenido', level: 'offline' };
       const diffMin = (Date.now() - new Date(iso).getTime()) / 60000;
       const relative = formatRelativeTime(iso);
-      if (diffMin < 3) return { color: '#22c55e', label: `Conectada · ${relative}` };
-      if (diffMin < 15) return { color: '#eab308', label: `Vista ${relative}` };
-      return { color: '#ef4444', label: `Sin señal · vista ${relative}` };
+      if (diffMin < 3) return { color: '#22c55e', label: `En vivo · vista ${relative}`, level: 'live' };
+      if (diffMin < 15) return { color: '#eab308', label: `Vista ${relative}`, level: 'idle' };
+      return { color: '#ef4444', label: `Sin señal · vista ${relative} — no está mostrando contenido`, level: 'offline' };
     }
+
+    let tvsAlreadyAlerted = new Set(); // evita repetir el toast de alerta en cada refresco de la barra
 
     /** Dibuja la barra de TVs a partir de la última data conocida. Se puede llamar
      * en cualquier momento (por ejemplo, al cambiar de TV) para que el resaltado
@@ -915,11 +968,24 @@
         tvsList.push({ id: tvId, name: data.name || tvId.toUpperCase() });
         const status = tvStatusInfo(data.status);
 
+        // Alerta única por caída: avisa la primera vez que detecta "offline",
+        // y se resetea si la TV vuelve a estar en vivo (para poder re-avisar
+        // ante una caída futura sin spamear en cada refresco de 60s).
+        if (status.level === 'offline') {
+          if (!tvsAlreadyAlerted.has(tvId)) {
+            tvsAlreadyAlerted.add(tvId);
+            showToast(`"${data.name || tvId}" no está mostrando contenido (sin señal).`, true);
+          }
+        } else {
+          tvsAlreadyAlerted.delete(tvId);
+        }
+
         const wrapper = document.createElement('div');
         wrapper.className = `tv-btn-wrapper ${tvId === currentTV ? 'active' : ''}`;
         wrapper.innerHTML = `
           <button class="tv-btn" onclick="selectTV('${tvId}')">
-            <span class="tv-status-dot" style="background:${status.color}; color:${status.color};" title="${escapeHtml(status.label)}"></span>
+            <span class="tv-status-dot status-${status.level}" style="background:${status.color}; color:${status.color};" title="${escapeHtml(status.label)}"></span>
+            ${status.level === 'offline' ? `<span class="tv-alert-badge" title="${escapeHtml(status.label)}">!</span>` : ''}
             <span>${escapeHtml(data.name || tvId.toUpperCase())}</span>
             <span onclick="event.stopPropagation(); showTVActions('${tvId}')" title="Opciones" style="display:inline-flex; align-items:center;">
               <svg class="motion-icon motion-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
