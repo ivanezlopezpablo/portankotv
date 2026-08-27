@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard Multi-TV Profesional - Portanko Motion Graphics</title>
+  <title>Dashboard Multi-TV Profesional - Portanko</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
@@ -124,7 +124,6 @@
     .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: all 0.2s; }
     .btn-action:hover { background: var(--accent-hover); transform: translateY(-1px); }
 
-    /* Guía Canva Card Style */
     .canva-guide-card {
       background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(30, 41, 59, 1) 100%);
       border: 1px solid var(--cyan);
@@ -166,27 +165,36 @@
     .preview-screen.orient-0.size-43 { width: 520px; height: 292px; }
     .preview-screen.orient-0.size-50 { width: 560px; height: 315px; }
 
-    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 340px; height: 191px; }
-    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 400px; height: 225px; }
-    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 450px; height: 253px; }
-    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 510px; height: 286px; }
+    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 247px; height: 440px; }
+    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 270px; height: 480px; }
+    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 292px; height: 520px; }
+    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 315px; height: 560px; }
 
-    .preview-screen.orient-90 { transform: rotate(90deg); }
-    .preview-screen.orient-270 { transform: rotate(270deg); }
-
-    .preview-screen img.bg-media, .preview-screen video.bg-media {
-      max-width: 100%;
-      max-height: 100%;
+    /* Estructura Wrapper Corregida para Renderizado Interno */
+    .media-wrapper {
       width: 100%;
       height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      margin: auto;
+      top: 0; left: 0;
+      overflow: hidden;
+    }
+
+    .media-wrapper img, .media-wrapper video {
+      width: 100%;
+      height: 100%;
       transition: transform 0.3s ease, object-fit 0.3s ease;
     }
 
-    .bg-media.fit-cover { object-fit: cover !important; }
-    .bg-media.fit-contain { object-fit: contain !important; }
+    .fit-cover { object-fit: cover !important; }
+    .fit-contain { object-fit: contain !important; }
+
+    .rot-0 { transform: rotate(0deg); }
+    .rot-90 { transform: rotate(90deg); width: 100vh !important; height: 100vw !important; }
+    .rot-180 { transform: rotate(180deg); }
+    .rot-270 { transform: rotate(270deg); width: 100vh !important; height: 100vw !important; }
 
     .draggable-badge { position: absolute; padding: 6px 10px; border-radius: 4px; font-weight: bold; font-size: 11px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
     .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.85); color: #fff; font-size: 10px; padding: 8px; text-align: center; z-index: 15; }
@@ -219,7 +227,6 @@
 
   <div class="main-grid">
     <div>
-      <!-- Guía Integrada de Medidas para Canva -->
       <div class="canva-guide-card">
         <h4>
           <svg class="motion-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
@@ -316,12 +323,7 @@
             </select>
           </div>
           <div style="flex: 1;">
-            <label>
-              Modo de Relleno
-              <span class="info-btn-motion" onclick="showInfoModal('Modo Relleno', 'Elije Rellenar Pantalla para ocupar todo el marco o Ajustar Entera para ver la imagen completa con bordes negros.')">
-                <svg class="motion-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-              </span>
-            </label>
+            <label>Modo de Relleno</label>
             <select id="itemFitSelect" onchange="updateSelectedLocalFileTransform()">
               <option value="cover" selected>Rellenar Pantalla (Cover)</option>
               <option value="contain">Ajustar Entera (Contain)</option>
@@ -453,10 +455,11 @@
     function updateSelectedLocalFileTransform() {
       const rot = document.getElementById('itemRotationSelect').value;
       const fit = document.getElementById('itemFitSelect').value;
-      const media = document.querySelector('#previewScreen .bg-media');
-      if (media) {
-        media.style.transform = `rotate(${rot}deg)`;
-        media.className = `bg-media fit-${fit}`;
+      const wrapper = document.querySelector('#previewScreen .media-wrapper');
+      if (wrapper) {
+        wrapper.className = `media-wrapper rot-${rot}`;
+        const media = wrapper.querySelector('img, video');
+        if (media) media.className = `fit-${fit}`;
       }
     }
 
@@ -465,8 +468,8 @@
       if (!file) return;
 
       const screen = document.getElementById('previewScreen');
-      const oldMedia = screen.querySelector('.bg-media');
-      if (oldMedia) oldMedia.remove();
+      const oldWrapper = screen.querySelector('.media-wrapper');
+      if (oldWrapper) oldWrapper.remove();
 
       const placeholder = document.getElementById('previewPlaceholder');
       if (placeholder) placeholder.style.display = 'none';
@@ -475,22 +478,25 @@
       const fit = document.getElementById('itemFitSelect').value || "cover";
       const fileURL = URL.createObjectURL(file);
 
+      const wrapper = document.createElement('div');
+      wrapper.className = `media-wrapper rot-${rot}`;
+
       if (file.type.includes('video')) {
         const video = document.createElement('video');
         video.src = fileURL;
-        video.className = `bg-media fit-${fit}`;
-        video.style.transform = `rotate(${rot}deg)`;
+        video.className = `fit-${fit}`;
         video.autoplay = true;
         video.muted = true;
         video.loop = true;
-        screen.appendChild(video);
+        wrapper.appendChild(video);
       } else {
         const img = document.createElement('img');
         img.src = fileURL;
-        img.className = `bg-media fit-${fit}`;
-        img.style.transform = `rotate(${rot}deg)`;
-        screen.appendChild(img);
+        img.className = `fit-${fit}`;
+        wrapper.appendChild(img);
       }
+
+      screen.appendChild(wrapper);
     }
 
     function listenAllTVs() {
