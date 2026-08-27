@@ -12,18 +12,65 @@
     html, body {
       width: 100vw;
       height: 100vh;
-      background-color: #000000;
+      background-color: #020617;
       overflow: hidden;
       cursor: none;
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', -apple-system, sans-serif;
     }
 
+    /* Pantalla Carga / Loader Institucional */
+    #loader-screen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: #020617;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.8s ease, visibility 0.8s;
+    }
+
+    .brand-loader h1 {
+      color: #ffffff;
+      font-size: 28px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .brand-loader span {
+      color: #d97706;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      display: block;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(217, 119, 6, 0.2);
+      border-top: 3px solid #d97706;
+      border-radius: 50%;
+      margin-top: 24px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Contenedor Responsive con Soporte de Rotación */
     #slider-container {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 100vw;
-      height: 100vh;
+      top: 50%; left: 50%;
+      width: 100vw; height: 100vh;
       transform: translate(-50%, -50%);
       transform-origin: center center;
       z-index: 1;
@@ -31,24 +78,22 @@
     }
 
     #slider-container.orientation-270 {
-      width: 100vh;
-      height: 100vw;
+      width: 100vh; height: 100vw;
       transform: translate(-50%, -50%) rotate(270deg);
     }
 
     #slider-container.orientation-90 {
-      width: 100vh;
-      height: 100vw;
+      width: 100vh; height: 100vw;
       transform: translate(-50%, -50%) rotate(90deg);
     }
 
     #slider-container.orientation-0 {
-      width: 100vw;
-      height: 100vh;
+      width: 100vw; height: 100vh;
       transform: translate(-50%, -50%) rotate(0deg);
     }
 
-    .slide {
+    /* Diapositivas multimedia */
+    .slide-media {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
@@ -60,24 +105,38 @@
       will-change: opacity, transform;
     }
 
-    .slide.active {
+    .slide-media.active {
       opacity: 1 !important;
       z-index: 10 !important;
-      transform: scale(1.05);
+      transform: scale(1.04);
     }
 
+    /* Banner Legal Ticker */
+    #legal-banner {
+      position: absolute;
+      bottom: 0; left: 0; width: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      color: #f8fafc;
+      font-size: 14px;
+      padding: 10px;
+      text-align: center;
+      z-index: 100;
+      letter-spacing: 1px;
+      border-top: 1px solid rgba(217, 119, 6, 0.3);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Indicador Offline */
     #status-badge {
       position: absolute;
-      top: 20px;
-      right: 20px;
+      top: 20px; right: 20px;
       background: rgba(220, 38, 38, 0.9);
       color: #ffffff;
       padding: 8px 16px;
       border-radius: 20px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       z-index: 999;
-      transition: opacity 0.5s ease;
       box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
 
@@ -86,7 +145,17 @@
 </head>
 <body>
 
+  <!-- Loader de Inicio -->
+  <div id="loader-screen">
+    <div class="brand-loader">
+      <h1>PORTANKO</h1>
+      <span>Abogados e Inmobiliaria</span>
+    </div>
+    <div class="spinner"></div>
+  </div>
+
   <div id="slider-container" class="orientation-270"></div>
+  <div id="legal-banner" class="hidden">Portanko Abogados e Inmobiliaria</div>
   <div id="status-badge" class="hidden">Modo Offline</div>
 
   <audio id="bg-music" loop preload="auto"></audio>
@@ -95,17 +164,13 @@
     const urlParams = new URLSearchParams(window.location.search);
     const TV_ID = urlParams.get('tv') || 'tv1';
 
-    const GITHUB_USER = "ivanezlopezpablo"; 
-    const GITHUB_REPO = "portankotv1"; 
-    const FOLDER_PATH = "imagenes"; 
-    const DURACION_IMAGEN_MS = 7000; 
-    const REFRESCAR_REPOS_MS = 5 * 60 * 1000; 
-
     const container = document.getElementById("slider-container");
+    const loaderScreen = document.getElementById("loader-screen");
     const statusBadge = document.getElementById("status-badge");
+    const legalBanner = document.getElementById("legal-banner");
     const bgMusic = document.getElementById("bg-music");
 
-    let mediaItems = [];
+    let playlist = [];
     let currentIndex = 0;
     let stepTimeout = null;
     let currentAudioUrl = "";
@@ -124,6 +189,12 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    function hideLoader() {
+      if (loaderScreen) {
+        loaderScreen.classList.add("hidden");
+      }
+    }
+
     function updateBackgroundAudio(audioSettings) {
       if (!audioSettings || !audioSettings.enabled || !audioSettings.audioUrl) {
         bgMusic.pause();
@@ -135,19 +206,16 @@
         currentAudioUrl = audioSettings.audioUrl;
         bgMusic.src = currentAudioUrl;
         bgMusic.volume = audioSettings.volume !== undefined ? audioSettings.volume : 0.5;
-        playAudioWithAutoplayFallback();
-      } else {
-        if (audioSettings.volume !== undefined) {
-          bgMusic.volume = audioSettings.volume;
-        }
+        playAudioWithFallback();
+      } else if (audioSettings.volume !== undefined) {
+        bgMusic.volume = audioSettings.volume;
       }
     }
 
-    function playAudioWithAutoplayFallback() {
+    function playAudioWithFallback() {
       const promise = bgMusic.play();
       if (promise !== undefined) {
-        promise.catch(err => {
-          console.warn("Autoplay bloqueado. Esperando interacción:", err);
+        promise.catch(() => {
           document.addEventListener("click", () => { bgMusic.play(); }, { once: true });
         });
       }
@@ -157,9 +225,29 @@
       db.collection("portanko_tvs").doc(TV_ID).onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
+          
           applyOrientation(data.orientation || 270);
           updateBackgroundAudio(data.audioSettings);
+
+          if (data.legalBanner) {
+            legalBanner.innerText = data.legalBanner.text || "";
+            if (data.legalBanner.show) legalBanner.classList.remove("hidden");
+            else legalBanner.classList.add("hidden");
+          }
+
+          const newPlaylist = data.playlist || [];
+          if (JSON.stringify(newPlaylist) !== JSON.stringify(playlist)) {
+            playlist = newPlaylist;
+            if (playlist.length > 0) renderCurrentSlide();
+            else hideLoader();
+          }
+        } else {
+          hideLoader();
         }
+      }, err => {
+        console.warn("Firestore error:", err);
+        statusBadge.classList.remove("hidden");
+        hideLoader();
       });
     }
 
@@ -168,72 +256,61 @@
       container.classList.add(`orientation-${degree}`);
     }
 
-    async function fetchMediaFromGitHub() {
-      const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${FOLDER_PATH}?t=${new Date().getTime()}`;
-      
-      try {
-        const response = await fetch(apiUrl);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    function renderCurrentSlide() {
+      if (playlist.length === 0) return;
+      if (stepTimeout) clearTimeout(stepTimeout);
 
-        const files = await response.json();
-        
-        const newMediaItems = files
-          .filter(file => file.name.match(/\.(jpg|jpeg|png|webp|gif)$/i))
-          .map(file => file.download_url);
+      const item = playlist[currentIndex];
+      const prevElement = container.querySelector(".slide-media.active");
 
-        statusBadge.classList.add("hidden");
+      if (item.type === 'video') {
+        const video = document.createElement('video');
+        video.src = item.url;
+        video.className = 'slide-media';
+        video.autoplay = true;
+        video.muted = true;
+        video.playsInline = true;
 
-        if (newMediaItems.length > 0) {
-          if (JSON.stringify(newMediaItems) !== JSON.stringify(mediaItems)) {
-            mediaItems = newMediaItems;
-            updateDOMSlides();
-          }
-        }
-      } catch (error) {
-        console.warn("Error cargando imágenes:", error);
-        statusBadge.classList.remove("hidden");
+        video.oncanplaythrough = () => {
+          container.appendChild(video);
+          setTimeout(() => {
+            if (prevElement) prevElement.remove();
+            video.classList.add("active");
+            hideLoader();
+          }, 50);
+        };
+
+        video.onended = () => { nextSlide(); };
+        video.onerror = () => { nextSlide(); };
+
+      } else {
+        const img = document.createElement('img');
+        img.src = item.url;
+        img.className = 'slide-media';
+
+        img.onload = () => {
+          container.appendChild(img);
+          setTimeout(() => {
+            if (prevElement) prevElement.remove();
+            img.classList.add("active");
+            hideLoader();
+          }, 50);
+
+          const durationMs = (item.duration || 7) * 1000;
+          stepTimeout = setTimeout(() => { nextSlide(); }, durationMs);
+        };
+
+        img.onerror = () => { nextSlide(); };
       }
     }
 
-    function updateDOMSlides() {
-      clearTimeout(stepTimeout);
-      container.innerHTML = "";
-      
-      mediaItems.forEach((url, index) => {
-        const img = document.createElement("img");
-        img.src = url;
-        img.classList.add("slide");
-        if (index === 0) img.classList.add("active");
-        container.appendChild(img);
-      });
-
-      currentIndex = 0;
-      playCurrentSlide();
-    }
-
-    function playCurrentSlide() {
-      const slides = document.querySelectorAll(".slide");
-      if (slides.length === 0) return;
-
-      stepTimeout = setTimeout(() => {
-        nextSlide();
-      }, DURACION_IMAGEN_MS);
-    }
-
     function nextSlide() {
-      const slides = document.querySelectorAll(".slide");
-      if (slides.length <= 1) return;
-
-      slides[currentIndex].classList.remove("active");
-      currentIndex = (currentIndex + 1) % slides.length;
-      slides[currentIndex].classList.add("active");
-      
-      playCurrentSlide();
+      if (playlist.length === 0) return;
+      currentIndex = (currentIndex + 1) % playlist.length;
+      renderCurrentSlide();
     }
 
     listenTVConfiguration();
-    fetchMediaFromGitHub();
-    setInterval(fetchMediaFromGitHub, REFRESCAR_REPOS_MS);
   </script>
 </body>
 </html>
