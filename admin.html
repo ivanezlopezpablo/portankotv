@@ -6,6 +6,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+  <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
   <style>
     :root {
       --bg: #090d16; --card: rgba(15, 23, 42, 0.88); --accent: #991b1b; --accent-hover: #7f1d1d;
@@ -95,6 +96,9 @@
     .loader-spinner { width: 65px; height: 65px; border: 4px solid rgba(153, 27, 27, 0.2); border-top: 4px solid #ef4444; border-radius: 50%; animation: spinLoader 0.8s linear infinite; margin-bottom: 16px; }
     @keyframes spinLoader { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .loader-text { color: #fca5a5; font-size: 15px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+    #lottie-upload-loader { width: 110px; height: 110px; display: none; }
+    #lottie-toast-success { width: 26px; height: 26px; display: none; flex-shrink: 0; }
+    .toast-icon-error { width: 20px; height: 20px; flex-shrink: 0; color: #fecaca; }
 
     .preview-stage { width: 100%; height: 700px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); box-shadow: inset 0 0 20px rgba(0,0,0,0.9); }
     .preview-screen { background: #000; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 3px solid #1e3a8a; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 35px rgba(30, 58, 138, 0.5); }
@@ -312,12 +316,15 @@
   </div>
 
   <div id="uploadLoader">
-    <div class="loader-spinner"></div>
+    <div class="loader-spinner" id="css-loader-fallback"></div>
+    <div id="lottie-upload-loader"></div>
     <div class="loader-text" id="uploadLoaderText">Subiendo archivo al repositorio corporativo...</div>
   </div>
 
   <div id="copyToast">
-    <svg class="motion-icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <svg class="motion-icon toast-icon-error" id="toastIconError" viewBox="0 0 24 24" style="display:none;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+    <svg class="motion-icon" id="toastIconDefault" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    <div id="lottie-toast-success"></div>
     <span id="copyToastText">URL copiada al portapapeles</span>
   </div>
 
@@ -383,12 +390,108 @@
     }
 
     /* =========================================================
+       ANIMACIONES LOTTIE (incrustadas, sin depender de URLs externas)
+       ========================================================= */
+    // Anillo de carga (loop) — reemplaza al spinner CSS del loader de subida.
+    const LOTTIE_SPINNER_DATA = {"v":"5.9.0","fr":60,"ip":0,"op":60,"w":200,"h":200,"nm":"PortankoSpinner","ddd":0,"assets":[],
+      "layers":[{"ddd":0,"ind":1,"ty":4,"nm":"ring","sr":1,
+        "ks":{"o":{"a":0,"k":100},
+          "r":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":0,"s":[0]},{"t":60,"s":[360]}]},
+          "p":{"a":0,"k":[100,100,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}},
+        "ao":0,
+        "shapes":[{"ty":"gr","it":[
+          {"ty":"el","p":{"a":0,"k":[0,0]},"s":{"a":0,"k":[150,150]}},
+          {"ty":"tm","s":{"a":0,"k":0},"e":{"a":0,"k":72},"o":{"a":0,"k":0},"m":1},
+          {"ty":"st","c":{"a":0,"k":[0.937,0.106,0.106,1]},"o":{"a":0,"k":100},"w":{"a":0,"k":12},"lc":2,"lj":2},
+          {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
+        ],"nm":"ringGroup"}],
+        "ip":0,"op":60,"st":0,"bm":0}]};
+
+    // Tilde de éxito (una sola vez) — círculo que aparece con rebote + check que se desvanece adentro.
+    const LOTTIE_SUCCESS_DATA = {"v":"5.9.0","fr":30,"ip":0,"op":40,"w":120,"h":120,"nm":"PortankoSuccess","ddd":0,"assets":[],
+      "layers":[
+        {"ddd":0,"ind":1,"ty":4,"nm":"check","sr":1,
+          "ks":{
+            "o":{"a":1,"k":[{"t":0,"s":[0]},{"t":14,"s":[0]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":14,"s":[0]},{"t":24,"s":[100]}]},
+            "r":{"a":0,"k":0},"p":{"a":0,"k":[60,60,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}
+          },
+          "ao":0,
+          "shapes":[{"ty":"gr","it":[
+            {"ty":"sh","ks":{"a":0,"k":{"i":[[0,0],[0,0],[0,0]],"o":[[0,0],[0,0],[0,0]],"v":[[-20,2],[-6,16],[22,-18]],"c":false}}},
+            {"ty":"st","c":{"a":0,"k":[1,1,1,1]},"o":{"a":0,"k":100},"w":{"a":0,"k":8},"lc":2,"lj":2},
+            {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
+          ],"nm":"checkGroup"}],
+          "ip":0,"op":40,"st":0,"bm":0},
+        {"ddd":0,"ind":2,"ty":4,"nm":"circle","sr":1,
+          "ks":{
+            "o":{"a":0,"k":100},"r":{"a":0,"k":0},"p":{"a":0,"k":[60,60,0]},"a":{"a":0,"k":[0,0,0]},
+            "s":{"a":1,"k":[
+              {"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":0,"s":[0,0,100]},
+              {"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":12,"s":[112,112,100]},
+              {"t":18,"s":[100,100,100]}
+            ]}
+          },
+          "ao":0,
+          "shapes":[{"ty":"gr","it":[
+            {"ty":"el","p":{"a":0,"k":[0,0]},"s":{"a":0,"k":[90,90]}},
+            {"ty":"fl","c":{"a":0,"k":[0.133,0.773,0.369,1]},"o":{"a":0,"k":100}},
+            {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
+          ],"nm":"circleGroup"}],
+          "ip":0,"op":40,"st":0,"bm":0}
+      ]};
+
+    let lottieSuccessAnim = null;
+
+    /** Inicializa una animación Lottie con manejo de errores: si algo falla la UI
+     * simplemente se queda con el ícono estático de respaldo, sin romper nada. */
+    function initLottieSafe(containerId, data, loop, fallbackToHideId) {
+      try {
+        if (typeof lottie === 'undefined') return null;
+        const el = document.getElementById(containerId);
+        if (!el) return null;
+        const anim = lottie.loadAnimation({
+          container: el, renderer: 'svg', loop: !!loop, autoplay: !!loop, animationData: data
+        });
+        el.style.display = 'block';
+        if (fallbackToHideId) { const fb = document.getElementById(fallbackToHideId); if (fb) fb.style.display = 'none'; }
+        return anim;
+      } catch (e) {
+        console.warn('No se pudo iniciar la animación Lottie:', e);
+        return null;
+      }
+    }
+
+    initLottieSafe('lottie-upload-loader', LOTTIE_SPINNER_DATA, true, 'css-loader-fallback');
+    lottieSuccessAnim = initLottieSafe('lottie-toast-success', LOTTIE_SUCCESS_DATA, false, null);
+    if (lottieSuccessAnim) document.getElementById('toastIconDefault').style.display = 'none';
+
+    /* =========================================================
        TOAST / MODAL GENÉRICOS
        ========================================================= */
     function showToast(msg, isError) {
       const toast = document.getElementById('copyToast');
       document.getElementById('copyToastText').innerText = msg;
       toast.classList.toggle('error', !!isError);
+
+      const errorIcon = document.getElementById('toastIconError');
+      const successLottieEl = document.getElementById('lottie-toast-success');
+      const defaultIcon = document.getElementById('toastIconDefault');
+
+      if (isError) {
+        errorIcon.style.display = 'block';
+        successLottieEl.style.display = 'none';
+        defaultIcon.style.display = 'none';
+      } else {
+        errorIcon.style.display = 'none';
+        if (lottieSuccessAnim) {
+          successLottieEl.style.display = 'block';
+          defaultIcon.style.display = 'none';
+          lottieSuccessAnim.goToAndPlay(0, true);
+        } else {
+          defaultIcon.style.display = 'block';
+        }
+      }
+
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2800);
     }
