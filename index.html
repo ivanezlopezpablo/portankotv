@@ -8,48 +8,93 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100vw; height: 100vh; background-color: #000; overflow: hidden; cursor: none; font-family: 'Segoe UI', sans-serif; }
+    html, body {
+      width: 100vw; height: 100vh;
+      background-color: #000;
+      overflow: hidden; cursor: none;
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+    }
 
+    /* ---------- LOADER ---------- */
     #loader-screen {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #020617;
-      display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
-      transition: opacity 0.8s ease;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #020617;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9999; transition: opacity 0.8s ease, visibility 0.8s;
     }
     .brand-loader h1 { color: #fff; font-size: 28px; letter-spacing: 4px; text-transform: uppercase; font-weight: 700; text-align: center; }
     .brand-loader span { color: #991b1b; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; display: block; text-align: center; margin-top: 4px; }
-    .spinner { width: 40px; height: 40px; border: 3px solid rgba(153, 27, 27, 0.2); border-top: 3px solid #ef4444; border-radius: 50%; margin-top: 24px; animation: spin 1s linear infinite; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(153, 27, 27, 0.2);
+      border-top: 3px solid #ef4444;
+      border-radius: 50%; margin-top: 24px;
+      animation: spin 1s linear infinite;
+    }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+    /* Mensaje de "sin contenido" para poder diagnosticar en el local sin abrir consola */
+    #empty-state {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #020617; color: #94a3b8;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9998; text-align: center; padding: 24px; font-size: 16px;
+    }
+    #empty-state h2 { color: #fff; font-size: 20px; margin-bottom: 8px; }
+
+    /* ---------- CONTENEDOR / ORIENTACIÓN ---------- */
     #slider-container {
-      position: absolute; top: 50%; left: 50%; width: 100vw; height: 100vh;
-      transform: translate(-50%, -50%); transform-origin: center center; z-index: 1; background: #000;
+      position: absolute; top: 50%; left: 50%;
+      width: 100vw; height: 100vh;
+      transform: translate(-50%, -50%);
+      transform-origin: center center;
+      z-index: 1; background: #000;
       display: flex; justify-content: center; align-items: center;
     }
     #slider-container.orientation-270 { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(270deg); }
-    #slider-container.orientation-90 { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); }
-    #slider-container.orientation-0 { width: 100vw; height: 100vh; transform: translate(-50%, -50%) rotate(0deg); }
+    #slider-container.orientation-90  { width: 100vh; height: 100vw; transform: translate(-50%, -50%) rotate(90deg); }
+    #slider-container.orientation-180 { width: 100vw; height: 100vh; transform: translate(-50%, -50%) rotate(180deg); }
+    #slider-container.orientation-0   { width: 100vw; height: 100vh; transform: translate(-50%, -50%) rotate(0deg); }
 
+    /* ---------- SLIDES ---------- */
     .media-wrapper {
-      position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; width: 100%; height: 100%;
-      display: flex; justify-content: center; align-items: center; opacity: 0; z-index: 1;
-      transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1); will-change: opacity; overflow: hidden;
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto;
+      width: 100%; height: 100%;
+      display: flex; justify-content: center; align-items: center;
+      opacity: 0; z-index: 1;
+      transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+      will-change: opacity; overflow: hidden;
     }
     .media-wrapper.active { opacity: 1 !important; z-index: 10 !important; }
     .media-wrapper img, .media-wrapper video { width: 100%; height: 100%; }
 
-    .fit-cover { object-fit: cover !important; }
+    .fit-cover   { object-fit: cover !important; }
     .fit-contain { object-fit: contain !important; }
-    .rot-0 { transform: rotate(0deg); }
-    .rot-90 { transform: rotate(90deg); width: 100vh !important; height: 100vw !important; }
+
+    .rot-0   { transform: rotate(0deg); }
+    .rot-90  { transform: rotate(90deg);  width: 100vh !important; height: 100vw !important; }
     .rot-180 { transform: rotate(180deg); }
     .rot-270 { transform: rotate(270deg); width: 100vh !important; height: 100vw !important; }
 
+    /* ---------- BANNER LEGAL ---------- */
     #legal-banner {
-      position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(15, 23, 42, 0.9);
-      color: #f8fafc; font-size: 14px; padding: 10px; text-align: center; z-index: 100;
+      position: absolute; bottom: 0; left: 0; width: 100%;
+      background: rgba(15, 23, 42, 0.9); color: #f8fafc;
+      font-size: 14px; padding: 10px; text-align: center;
+      z-index: 100; letter-spacing: 1px;
       border-top: 1px solid rgba(153, 27, 27, 0.5); backdrop-filter: blur(8px);
     }
-    .hidden { opacity: 0; pointer-events: none; }
+
+    /* ---------- BADGE DE ESTADO ---------- */
+    #status-badge {
+      position: absolute; top: 20px; right: 20px;
+      background: rgba(153, 27, 27, 0.9); color: #fff;
+      padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+      z-index: 999; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    .hidden { opacity: 0 !important; pointer-events: none !important; }
+    .removed { display: none !important; }
   </style>
 </head>
 <body>
@@ -62,18 +107,44 @@
     <div class="spinner"></div>
   </div>
 
+  <div id="empty-state" class="removed">
+    <h2>Sin contenido programado</h2>
+    <p id="empty-state-detail">No hay medios cargados para hoy en esta pantalla.</p>
+  </div>
+
   <div id="slider-container" class="orientation-270"></div>
-  <div id="legal-banner" class="hidden">Portanko Abogados e Inmobiliaria</div>
+  <div id="legal-banner" class="hidden"></div>
+  <div id="status-badge" class="hidden">Modo Offline</div>
+
+  <audio id="bg-music" loop preload="auto"></audio>
 
   <script>
+    /* =========================================================
+       CONFIGURACIÓN GENERAL
+       ========================================================= */
     const urlParams = new URLSearchParams(window.location.search);
     const TV_ID = urlParams.get('tv') || 'tv1';
 
-    const container = document.getElementById("slider-container");
-    const loaderScreen = document.getElementById("loader-screen");
+    const container     = document.getElementById("slider-container");
+    const loaderScreen  = document.getElementById("loader-screen");
+    const emptyState    = document.getElementById("empty-state");
+    const emptyDetail   = document.getElementById("empty-state-detail");
+    const statusBadge   = document.getElementById("status-badge");
+    const legalBanner   = document.getElementById("legal-banner");
+    const bgMusic       = document.getElementById("bg-music");
+
+    const DEFAULT_LEGAL_TEXT = "Portanko Abogados e Inmobiliaria";
+    const DAY_NAMES = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+    const MAX_CONSECUTIVE_ERRORS = 5; // corta el loop si TODO el playlist está roto
+
     let playlist = [];
     let currentIndex = 0;
     let stepTimeout = null;
+    let currentAudioUrl = "";
+    let lastFirestoreData = null;  // guardamos el último doc para recalcular en el cambio de día
+    let lastAppliedDay = getCurrentDayName();
+    let consecutiveErrors = 0;
+    let firstRenderDone = false;
 
     const firebaseConfig = {
       apiKey: "AIzaSyAhTFpjaWhAUnA3P5_pXGNgjAUlKEtDXAA",
@@ -88,45 +159,184 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    // Cache local para tolerar cortes de conexión breves sin perder la última config
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => { /* no crítico si falla */ });
 
-    function hideLoader() { if (loaderScreen) loaderScreen.classList.add("hidden"); }
-
+    /* =========================================================
+       HELPERS
+       ========================================================= */
     function getCurrentDayName() {
-      const days = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
-      return days[new Date().getDay()];
+      return DAY_NAMES[new Date().getDay()];
     }
 
+    function hideLoader() {
+      if (loaderScreen && !loaderScreen.classList.contains("hidden")) {
+        loaderScreen.classList.add("hidden");
+      }
+    }
+
+    function showEmptyState(detailText) {
+      hideLoader();
+      if (detailText) emptyDetail.textContent = detailText;
+      emptyState.classList.remove("removed");
+    }
+
+    function hideEmptyState() {
+      emptyState.classList.add("removed");
+    }
+
+    function setOfflineBadge(isOffline) {
+      statusBadge.classList.toggle("hidden", !isOffline);
+    }
+
+    function applyOrientation(degree) {
+      const valid = [0, 90, 180, 270];
+      const deg = valid.includes(Number(degree)) ? Number(degree) : 270;
+      container.className = "";
+      container.classList.add(`orientation-${deg}`);
+    }
+
+    function applyLegalBanner(config) {
+      if (!config) {
+        legalBanner.textContent = DEFAULT_LEGAL_TEXT;
+        legalBanner.classList.remove("hidden");
+        return;
+      }
+      legalBanner.textContent = config.text || DEFAULT_LEGAL_TEXT;
+      if (config.show === false) legalBanner.classList.add("hidden");
+      else legalBanner.classList.remove("hidden");
+    }
+
+    function updateBackgroundAudio(audioSettings) {
+      if (!audioSettings || !audioSettings.enabled || !audioSettings.audioUrl) {
+        bgMusic.pause();
+        currentAudioUrl = "";
+        return;
+      }
+      if (currentAudioUrl !== audioSettings.audioUrl) {
+        currentAudioUrl = audioSettings.audioUrl;
+        bgMusic.src = currentAudioUrl;
+        bgMusic.volume = audioSettings.volume !== undefined ? audioSettings.volume : 0.5;
+        playAudioWithFallback();
+      } else if (audioSettings.volume !== undefined) {
+        bgMusic.volume = audioSettings.volume;
+      }
+    }
+
+    function playAudioWithFallback() {
+      const promise = bgMusic.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          // Algunos navegadores de Smart TV bloquean el autoplay con sonido:
+          // reintenta ante el primer evento de interacción disponible.
+          const retry = () => { bgMusic.play().catch(() => {}); };
+          document.addEventListener("click", retry, { once: true });
+          document.addEventListener("touchstart", retry, { once: true });
+          document.addEventListener("keydown", retry, { once: true });
+        });
+      }
+    }
+
+    /** Calcula el playlist correspondiente al día de hoy, con retrocompatibilidad */
+    function resolvePlaylistForToday(data) {
+      const today = getCurrentDayName();
+      if (data.schedule && Array.isArray(data.schedule[today])) {
+        return data.schedule[today];
+      }
+      if (Array.isArray(data.playlist)) {
+        return data.playlist; // retrocompatibilidad con documentos sin "schedule"
+      }
+      return [];
+    }
+
+    /** Precarga silenciosa del próximo ítem para evitar parpadeos/pantallas negras */
+    function preloadItem(item) {
+      if (!item) return;
+      if (item.type === 'video') {
+        const v = document.createElement('video');
+        v.preload = 'auto';
+        v.src = item.url;
+        v.muted = true;
+      } else {
+        const img = new Image();
+        img.src = item.url;
+      }
+    }
+
+    /* =========================================================
+       FIRESTORE: LISTENER PRINCIPAL
+       ========================================================= */
     function listenTVConfiguration() {
-      db.collection("portanko_tvs").doc(TV_ID).onSnapshot(doc => {
-        if (doc.exists) {
+      db.collection("portanko_tvs").doc(TV_ID).onSnapshot(
+        doc => {
+          setOfflineBadge(false);
+
+          if (!doc.exists) {
+            showEmptyState(`No existe configuración para la pantalla "${TV_ID}".`);
+            return;
+          }
+
           const data = doc.data();
-          container.className = "";
-          container.classList.add(`orientation-${data.orientation || 270}`);
+          lastFirestoreData = data;
+          lastAppliedDay = getCurrentDayName();
 
-          const today = getCurrentDayName();
-          let newPlaylist = [];
+          applyOrientation(data.orientation);
+          updateBackgroundAudio(data.audioSettings);
+          applyLegalBanner(data.legalBanner);
 
-          if (data.schedule && data.schedule[today]) {
-            newPlaylist = data.schedule[today];
-          } else if (data.playlist) {
-            // Retrocompatibilidad
-            newPlaylist = data.playlist;
+          applyPlaylistFromData(data);
+        },
+        err => {
+          console.warn("Firestore onSnapshot error:", err);
+          setOfflineBadge(true);
+          hideLoader();
+          // Si nunca hubo datos ni cache local, mostramos el aviso; si ya había
+          // contenido cargado, lo dejamos reproduciendo con lo último recibido.
+          if (!lastFirestoreData) {
+            showEmptyState("Sin conexión y sin datos en caché para esta pantalla.");
           }
-
-          if (JSON.stringify(newPlaylist) !== JSON.stringify(playlist)) {
-            playlist = newPlaylist;
-            if (playlist.length > 0) renderCurrentSlide();
-            else hideLoader();
-          }
-        } else { hideLoader(); }
-      }, err => { hideLoader(); });
+        }
+      );
     }
 
+    function applyPlaylistFromData(data) {
+      const newPlaylist = resolvePlaylistForToday(data);
+
+      if (JSON.stringify(newPlaylist) === JSON.stringify(playlist)) {
+        return; // nada cambió, no reiniciamos el slider
+      }
+
+      playlist = newPlaylist;
+      currentIndex = 0;
+      consecutiveErrors = 0;
+
+      if (playlist.length > 0) {
+        hideEmptyState();
+        renderCurrentSlide();
+      } else {
+        showEmptyState(`No hay medios cargados para hoy (${getCurrentDayName()}) en "${TV_ID}".`);
+      }
+    }
+
+    /* Revisa cada 30s si cambió el día calendario, para no depender de que
+       Firestore dispare un nuevo evento al cruzar la medianoche. */
+    setInterval(() => {
+      const today = getCurrentDayName();
+      if (today !== lastAppliedDay && lastFirestoreData) {
+        lastAppliedDay = today;
+        applyPlaylistFromData(lastFirestoreData);
+      }
+    }, 30000);
+
+    /* =========================================================
+       RENDERIZADO DE SLIDES
+       ========================================================= */
     function renderCurrentSlide() {
       if (playlist.length === 0) return;
       if (stepTimeout) clearTimeout(stepTimeout);
 
       const item = playlist[currentIndex];
+      const nextItem = playlist[(currentIndex + 1) % playlist.length];
       const prevElement = container.querySelector(".media-wrapper.active");
       const rot = item.rotation || 0;
       const fit = item.fit || 'cover';
@@ -134,38 +344,50 @@
       const wrapper = document.createElement('div');
       wrapper.className = `media-wrapper rot-${rot}`;
 
+      const activateWrapper = () => {
+        wrapper.appendChild(mediaEl);
+        container.appendChild(wrapper);
+        requestAnimationFrame(() => {
+          wrapper.classList.add("active");
+          setTimeout(() => { if (prevElement) prevElement.remove(); }, 1400);
+          hideLoader();
+          hideEmptyState();
+          firstRenderDone = true;
+          consecutiveErrors = 0;
+          preloadItem(nextItem); // precarga el siguiente mientras se muestra este
+        });
+      };
+
+      const handleItemError = () => {
+        consecutiveErrors++;
+        if (consecutiveErrors >= Math.max(MAX_CONSECUTIVE_ERRORS, playlist.length)) {
+          showEmptyState("No se pudo reproducir el contenido cargado (verificar URLs).");
+          return;
+        }
+        nextSlide();
+      };
+
+      let mediaEl;
       if (item.type === 'video') {
-        const video = document.createElement('video');
-        video.src = item.url; video.className = `fit-${fit}`; video.autoplay = true; video.muted = true; video.playsInline = true;
-
-        video.oncanplaythrough = () => {
-          wrapper.appendChild(video);
-          container.appendChild(wrapper);
-          setTimeout(() => {
-            wrapper.classList.add("active");
-            setTimeout(() => { if (prevElement) prevElement.remove(); }, 1400);
-            hideLoader();
-          }, 50);
-        };
-        video.onended = () => { nextSlide(); };
-        video.onerror = () => { nextSlide(); };
+        mediaEl = document.createElement('video');
+        mediaEl.src = item.url;
+        mediaEl.className = `fit-${fit}`;
+        mediaEl.autoplay = true;
+        mediaEl.muted = true;
+        mediaEl.playsInline = true;
+        mediaEl.oncanplaythrough = activateWrapper;
+        mediaEl.onended = () => { nextSlide(); };
+        mediaEl.onerror = handleItemError;
       } else {
-        const img = document.createElement('img');
-        img.src = item.url; img.className = `fit-${fit}`;
-
-        img.onload = () => {
-          wrapper.appendChild(img);
-          container.appendChild(wrapper);
-          setTimeout(() => {
-            wrapper.classList.add("active");
-            setTimeout(() => { if (prevElement) prevElement.remove(); }, 1400);
-            hideLoader();
-          }, 50);
-
+        mediaEl = document.createElement('img');
+        mediaEl.src = item.url;
+        mediaEl.className = `fit-${fit}`;
+        mediaEl.onload = () => {
+          activateWrapper();
           const durationMs = (item.duration || 7) * 1000;
           stepTimeout = setTimeout(() => { nextSlide(); }, durationMs);
         };
-        img.onerror = () => { nextSlide(); };
+        mediaEl.onerror = handleItemError;
       }
     }
 
@@ -175,7 +397,18 @@
       renderCurrentSlide();
     }
 
+    /* =========================================================
+       INICIO
+       ========================================================= */
     listenTVConfiguration();
+
+    // Watchdog: si a los 20s no renderizó nada (config vacía o URL colgada),
+    // muestra el estado vacío en lugar de dejar el loader infinito.
+    setTimeout(() => {
+      if (!firstRenderDone) {
+        showEmptyState(`Esperando contenido para "${TV_ID}"...`);
+      }
+    }, 20000);
   </script>
 </body>
 </html>
