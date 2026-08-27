@@ -23,34 +23,63 @@
     
     .tv-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
     
+    .tv-btn-wrapper {
+      display: flex;
+      align-items: center;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      transition: all 0.25s ease;
+    }
+
+    .tv-btn-wrapper:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px -3px rgba(217, 119, 6, 0.25);
+    }
+
+    .tv-btn-wrapper.active {
+      border-color: #f59e0b;
+      box-shadow: 0 0 15px rgba(217, 119, 6, 0.5);
+    }
+
     .tv-btn { 
-      background: var(--card); 
-      border: 2px solid var(--border); 
+      background: transparent; 
+      border: none; 
       color: var(--text); 
-      padding: 10px 18px; 
-      border-radius: 8px; 
+      padding: 10px 14px; 
       cursor: pointer; 
       font-weight: 600; 
-      transition: all 0.25s ease;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
-    .tv-btn:hover { 
-      border-color: var(--accent); 
-      transform: translateY(-2px); 
-      background: #283548;
-      box-shadow: 0 8px 15px -3px rgba(217, 119, 6, 0.25);
+    .tv-btn-wrapper.active .tv-btn {
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+      color: #fff;
     }
 
-    .tv-btn.active { 
-      background: linear-gradient(135deg, #d97706 0%, #b45309 100%); 
-      border-color: #f59e0b; 
-      color: #fff;
-      transform: scale(1.04);
-      box-shadow: 0 0 20px rgba(217, 119, 6, 0.6);
+    /* Botón Flaticon Copiar URL */
+    .flaticon-copy-btn {
+      background: rgba(15, 23, 42, 0.6);
+      border: none;
+      border-left: 1px solid var(--border);
+      color: #38bdf8;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .flaticon-copy-btn:hover {
+      background: #38bdf8;
+      color: #0f172a;
     }
 
     .btn-add-tv { 
@@ -94,10 +123,31 @@
       transition: all 0.2s;
     }
 
-    .info-btn:hover {
-      background: #38bdf8;
-      color: #0f172a;
-      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    .info-btn:hover { background: #38bdf8; color: #0f172a; }
+
+    /* Toast Notificación Copiado */
+    #copyToast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #10b981;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateY(20px);
+    }
+
+    #copyToast.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
     }
 
     /* Modal / Popup */
@@ -156,7 +206,7 @@
     .preview-screen.orient-90 { transform: rotate(90deg); }
     .preview-screen.orient-270 { transform: rotate(270deg); }
 
-    .preview-screen img.bg-media, .preview-screen video.bg-media { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
+    .preview-screen img.bg-media, .preview-screen video.bg-media { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; transition: transform 0.3s ease; }
 
     .draggable-badge { position: absolute; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
     .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: #fff; font-size: 8px; padding: 4px; text-align: center; z-index: 15; }
@@ -182,13 +232,13 @@
       <div class="section-card">
         <h3 class="section-title">
           <span>Ajustes de Pantalla & Música</span>
-          <span class="info-btn" onclick="showInfoModal('Ajustes de Pantalla', 'Configura la orientación responsive (0°, 90°, 270°) y selecciona el tamaño de TV en pulgadas para simular la vista previa real.')">?</span>
+          <span class="info-btn" onclick="showInfoModal('Ajustes de Pantalla', 'Configura la orientación responsive (0°, 90°, 270°) del televisor físico.')">?</span>
         </h3>
         <div class="form-row">
           <div style="flex: 1;">
             <label>
-              Orientación
-              <span class="info-btn" onclick="showInfoModal('Orientación', 'Usar 270° o 90° si el televisor está instalado de costado en formato totem.')">?</span>
+              Orientación TV
+              <span class="info-btn" onclick="showInfoModal('Orientación TV', 'Usar 270° o 90° si el televisor físico está colgado de costado.')">?</span>
             </label>
             <select id="orientationSelect" onchange="updatePreviewOrientation()">
               <option value="0">Horizontal (0°)</option>
@@ -209,10 +259,7 @@
             </select>
           </div>
           <div style="flex: 1;">
-            <label>
-              Música de Fondo
-              <span class="info-btn" onclick="showInfoModal('Música de Fondo', 'Activa o silencia el audio ambiental para esta pantalla específica.')">?</span>
-            </label>
+            <label>Música de Fondo</label>
             <select id="audioEnabled">
               <option value="true">Activado</option>
               <option value="false">Silenciado</option>
@@ -232,11 +279,11 @@
         <button class="btn-action" onclick="requestSaveTVConfig()">Guardar Ajustes de TV</button>
       </div>
 
-      <!-- Carga Multimedia con Previsualización Inmediata -->
+      <!-- Carga Multimedia con Rotación Individual -->
       <div class="section-card">
         <h3 class="section-title">
           <span>Subir Nuevo Contenido (Imagen / Video)</span>
-          <span class="info-btn" onclick="showInfoModal('Gestor Multimedia', 'Al seleccionar un archivo local, la pantalla de vista previa mostrará inmediatamente cómo quedará en el televisor antes de subirlo.')">?</span>
+          <span class="info-btn" onclick="showInfoModal('Gestor Multimedia', 'Si la imagen se ve acostada en la TV, usa la opción Rotación Imagen para corregir su orientación independientemente de la TV.')">?</span>
         </h3>
         <div class="form-row">
           <div style="flex: 2;">
@@ -256,8 +303,20 @@
         </div>
         <div class="form-row">
           <div style="flex: 1;">
-            <label>Duración Imagen (Segs)</label>
+            <label>Duración Imagen (s)</label>
             <input type="number" id="mediaDuration" value="7" min="1">
+          </div>
+          <div style="flex: 1;">
+            <label>
+              Rotación Imagen
+              <span class="info-btn" onclick="showInfoModal('Rotación Imagen', 'Permite enderezar una imagen vertical cargada de costado (ej. 90° o 270°).')">?</span>
+            </label>
+            <select id="itemRotationSelect" onchange="updateSelectedLocalFileRotation()">
+              <option value="0" selected>Normal (0°)</option>
+              <option value="90">Girar 90°</option>
+              <option value="180">Girar 180°</option>
+              <option value="270">Girar 270°</option>
+            </select>
           </div>
           <div style="flex: 2;">
             <label>Archivo Multimedia (Imagen / MP4)</label>
@@ -316,6 +375,8 @@
     </div>
   </div>
 
+  <div id="copyToast">📋 URL copiada al portapapeles</div>
+
   <!-- POPUP / MODAL UNIVERSAL -->
   <div id="customModal" class="modal-overlay">
     <div class="modal-card">
@@ -349,6 +410,17 @@
     let currentTV = "tv1";
     let tvPlaylist = [];
 
+    function copyTVUrl(tvId) {
+      const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+      const tvUrl = `${baseUrl}?tv=${tvId}`;
+      
+      navigator.clipboard.writeText(tvUrl).then(() => {
+        const toast = document.getElementById('copyToast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+      });
+    }
+
     function closeModal() { document.getElementById('customModal').classList.remove('active'); }
 
     function showInfoModal(title, text) {
@@ -370,7 +442,12 @@
       document.getElementById('customModal').classList.add('active');
     }
 
-    // Previsualizar localmente el archivo antes de subir
+    function updateSelectedLocalFileRotation() {
+      const rot = document.getElementById('itemRotationSelect').value;
+      const media = document.querySelector('#previewScreen .bg-media');
+      if (media) media.style.transform = `rotate(${rot}deg)`;
+    }
+
     function previewSelectedLocalFile(input) {
       const file = input.files[0];
       if (!file) return;
@@ -382,11 +459,14 @@
       const placeholder = document.getElementById('previewPlaceholder');
       if (placeholder) placeholder.style.display = 'none';
 
+      const rot = document.getElementById('itemRotationSelect').value || "0";
       const fileURL = URL.createObjectURL(file);
+
       if (file.type.includes('video')) {
         const video = document.createElement('video');
         video.src = fileURL;
         video.className = 'bg-media';
+        video.style.transform = `rotate(${rot}deg)`;
         video.autoplay = true;
         video.muted = true;
         video.loop = true;
@@ -395,6 +475,7 @@
         const img = document.createElement('img');
         img.src = fileURL;
         img.className = 'bg-media';
+        img.style.transform = `rotate(${rot}deg)`;
         screen.appendChild(img);
       }
     }
@@ -410,14 +491,19 @@
           snapshot.forEach(doc => {
             const tvId = doc.id;
             const data = doc.data();
-            const btn = document.createElement('button');
-            btn.className = `tv-btn ${tvId === currentTV ? 'active' : ''}`;
-            btn.innerHTML = `
-              <span>${data.name || tvId.toUpperCase()}</span>
-              <span class="info-btn" onclick="event.stopPropagation(); showTVActions('${tvId}', '${data.name}')" title="Opciones">⚙️</span>
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = `tv-btn-wrapper ${tvId === currentTV ? 'active' : ''}`;
+            
+            wrapper.innerHTML = `
+              <button class="tv-btn" onclick="selectTV('${tvId}')">
+                <span>${data.name || tvId.toUpperCase()}</span>
+                <span class="info-btn" onclick="event.stopPropagation(); showTVActions('${tvId}', '${data.name}')" title="Opciones">⚙️</span>
+              </button>
+              <button class="flaticon-copy-btn" onclick="event.stopPropagation(); copyTVUrl('${tvId}')" title="Copiar URL directa a esta TV">📋</button>
             `;
-            btn.onclick = () => selectTV(tvId);
-            tvContainer.appendChild(btn);
+            
+            tvContainer.appendChild(wrapper);
           });
         }
 
@@ -436,7 +522,10 @@
 
       document.getElementById('modalBody').innerHTML = `
         <p style="margin-bottom:12px;"><strong>URL del Televisor:</strong></p>
-        <input type="text" value="${tvUrl}" readonly onclick="this.select()" style="margin-bottom:16px;">
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <input type="text" value="${tvUrl}" readonly onclick="this.select()">
+          <button style="background:#38bdf8; color:#0f172a; border:none; padding:10px 14px; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="copyTVUrl('${tvId}')">📋 Copiar</button>
+        </div>
         <p>¿Deseas eliminar permanentemente este televisor?</p>
       `;
 
@@ -531,10 +620,10 @@
         itemDiv.className = 'playlist-item';
         itemDiv.innerHTML = `
           <div style="display:flex; align-items:center;">
-            <img src="${item.url}" class="playlist-thumb" onerror="this.src='https://via.placeholder.com/45?text=Video'">
+            <img src="${item.url}" class="playlist-thumb" style="transform: rotate(${item.rotation || 0}deg)" onerror="this.src='https://via.placeholder.com/45?text=Video'">
             <div>
               <strong style="font-size:12px; display:block;">${item.title || 'Slide ' + (index+1)}</strong>
-              <small style="color:#94a3b8;">${item.type === 'video' ? 'Video MP4 (Auto)' : item.duration + 's'}</small>
+              <small style="color:#94a3b8;">${item.type === 'video' ? 'Video MP4' : item.duration + 's'} | Girado: ${item.rotation || 0}°</small>
             </div>
           </div>
           <div style="display:flex; gap:6px;">
@@ -556,12 +645,15 @@
         newDuration = parseInt(prompt("Modificar Duración en Segundos:", item.duration)) || item.duration;
       }
 
+      const newRotation = parseInt(prompt("Modificar Rotación Imagen (0, 90, 180, 270):", item.rotation || 0));
+
       showConfirmModal(
         'CONFIRMAR EDICIÓN DE SLIDE',
         `¿Desea aplicar los cambios a '${newTitle}'?`,
         async () => {
           tvPlaylist[index].title = newTitle;
           tvPlaylist[index].duration = newDuration;
+          tvPlaylist[index].rotation = isNaN(newRotation) ? (item.rotation || 0) : newRotation;
           await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
         }
       );
@@ -600,6 +692,7 @@
               url: downloadURL,
               type: isVideo ? 'video' : 'image',
               duration: isVideo ? null : parseInt(document.getElementById('mediaDuration').value),
+              rotation: parseInt(document.getElementById('itemRotationSelect').value) || 0,
               badgeText: document.getElementById('badgeSelect').value || null
             };
 
@@ -635,7 +728,8 @@
             playlist: []
           });
 
-          showInfoModal('URL DE TU NUEVA TV', `Configura la siguiente dirección en la Smart TV:\n\n${tvUrl}`);
+          copyTVUrl(tvId);
+          showInfoModal('URL DE TU NUEVA TV COPIADA', `La URL de tu pantalla ha sido copiada automáticamente al portapapeles:\n\n${tvUrl}`);
           selectTV(tvId);
         }
       );
