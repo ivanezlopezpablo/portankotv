@@ -6,6 +6,7 @@
   <title>Vidriera Digital Multi-TV - Portanko</title>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://unpkg.com/lottie-web@5.12.2/build/player/lottie.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -32,6 +33,10 @@
       animation: spin 1s linear infinite;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* Contenedor de la animación Lottie del spinner. Oculto por defecto: si Lottie
+       carga bien se muestra y se oculta el spinner CSS; si falla, el CSS queda visible. */
+    #lottie-loader { width: 90px; height: 90px; margin-top: 12px; display: none; }
+    #lottie-empty { width: 110px; height: 110px; margin: 0 auto 12px; }
 
     /* Mensaje de "sin contenido" para poder diagnosticar en el local sin abrir consola */
     #empty-state {
@@ -104,10 +109,12 @@
       <h1>PORTANKO</h1>
       <span>Abogados e Inmobiliaria</span>
     </div>
-    <div class="spinner"></div>
+    <div class="spinner" id="css-spinner-fallback"></div>
+    <div id="lottie-loader"></div>
   </div>
 
   <div id="empty-state" class="removed">
+    <div id="lottie-empty"></div>
     <h2>Sin contenido programado</h2>
     <p id="empty-state-detail">No hay medios cargados para hoy en esta pantalla.</p>
   </div>
@@ -119,6 +126,63 @@
   <audio id="bg-music" loop preload="auto"></audio>
 
   <script>
+    /* =========================================================
+       ANIMACIONES LOTTIE (incrustadas, sin depender de URLs externas)
+       ========================================================= */
+    // Anillo de carga (loop) — reemplaza al spinner CSS cuando Lottie está disponible.
+    const LOTTIE_SPINNER_DATA = {"v":"5.9.0","fr":60,"ip":0,"op":60,"w":200,"h":200,"nm":"PortankoSpinner","ddd":0,"assets":[],
+      "layers":[{"ddd":0,"ind":1,"ty":4,"nm":"ring","sr":1,
+        "ks":{"o":{"a":0,"k":100},
+          "r":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":0,"s":[0]},{"t":60,"s":[360]}]},
+          "p":{"a":0,"k":[100,100,0]},"a":{"a":0,"k":[0,0,0]},"s":{"a":0,"k":[100,100,100]}},
+        "ao":0,
+        "shapes":[{"ty":"gr","it":[
+          {"ty":"el","p":{"a":0,"k":[0,0]},"s":{"a":0,"k":[150,150]}},
+          {"ty":"tm","s":{"a":0,"k":0},"e":{"a":0,"k":72},"o":{"a":0,"k":0},"m":1},
+          {"ty":"st","c":{"a":0,"k":[0.937,0.106,0.106,1]},"o":{"a":0,"k":100},"w":{"a":0,"k":12},"lc":2,"lj":2},
+          {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
+        ],"nm":"ringGroup"}],
+        "ip":0,"op":60,"st":0,"bm":0}]};
+
+    // Ícono "respirando" (loop) para la pantalla de sin contenido.
+    const LOTTIE_EMPTY_DATA = {"v":"5.9.0","fr":30,"ip":0,"op":60,"w":160,"h":160,"nm":"PortankoEmpty","ddd":0,"assets":[],
+      "layers":[{"ddd":0,"ind":1,"ty":4,"nm":"pulse","sr":1,
+        "ks":{
+          "o":{"a":1,"k":[{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":0,"s":[55]},{"i":{"x":[0.667],"y":[1]},"o":{"x":[0.333],"y":[0]},"t":30,"s":[100]},{"t":60,"s":[55]}]},
+          "r":{"a":0,"k":0},"p":{"a":0,"k":[80,80,0]},"a":{"a":0,"k":[0,0,0]},
+          "s":{"a":1,"k":[{"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":0,"s":[100,100,100]},{"i":{"x":[0.667,0.667,0.667],"y":[1,1,1]},"o":{"x":[0.333,0.333,0.333],"y":[0,0,0]},"t":30,"s":[114,114,100]},{"t":60,"s":[100,100,100]}]}
+        },
+        "ao":0,
+        "shapes":[{"ty":"gr","it":[
+          {"ty":"el","p":{"a":0,"k":[0,0]},"s":{"a":0,"k":[130,130]}},
+          {"ty":"st","c":{"a":0,"k":[0.219,0.741,0.973,1]},"o":{"a":0,"k":100},"w":{"a":0,"k":8},"lc":2,"lj":2},
+          {"ty":"tr","p":{"a":0,"k":[0,0]},"a":{"a":0,"k":[0,0]},"s":{"a":0,"k":[100,100]},"r":{"a":0,"k":0},"o":{"a":0,"k":100}}
+        ],"nm":"pulseGroup"}],
+        "ip":0,"op":60,"st":0,"bm":0}]};
+
+    /** Inicializa una animación Lottie con manejo de errores: si algo falla
+     * (librería no cargó, JSON inválido, etc.) simplemente no se muestra nada
+     * animado y el resto de la pantalla sigue funcionando con normalidad. */
+    function initLottieSafe(containerId, data, loop, fallbackToHide) {
+      try {
+        if (typeof lottie === 'undefined') return null;
+        const el = document.getElementById(containerId);
+        if (!el) return null;
+        const anim = lottie.loadAnimation({
+          container: el, renderer: 'svg', loop: !!loop, autoplay: true, animationData: data
+        });
+        el.style.display = 'block';
+        if (fallbackToHide) { const fb = document.getElementById(fallbackToHide); if (fb) fb.style.display = 'none'; }
+        return anim;
+      } catch (e) {
+        console.warn('No se pudo iniciar la animación Lottie:', e);
+        return null;
+      }
+    }
+
+    initLottieSafe('lottie-loader', LOTTIE_SPINNER_DATA, true, 'css-spinner-fallback');
+    initLottieSafe('lottie-empty', LOTTIE_EMPTY_DATA, true, null);
+
     /* =========================================================
        CONFIGURACIÓN GENERAL
        ========================================================= */
