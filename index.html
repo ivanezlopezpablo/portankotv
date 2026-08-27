@@ -62,16 +62,22 @@
     #slider-container.orientation-0   { width: 100vw; height: 100vh; transform: translate(-50%, -50%) rotate(0deg); }
 
     /* ---------- SLIDES ---------- */
+    /* Capa externa: SOLO controla la transición entre slides (fundido + leve
+       acercamiento). Nunca lleva rotación, para no pisarse con .rot-X. */
     .media-wrapper {
       position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto;
       width: 100%; height: 100%;
-      display: flex; justify-content: center; align-items: center;
       opacity: 0; z-index: 1;
-      transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
-      will-change: opacity; overflow: hidden;
+      transform: scale(1.045);
+      transition: opacity 1.7s cubic-bezier(0.22, 1, 0.36, 1), transform 1.9s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: opacity, transform; overflow: hidden;
     }
-    .media-wrapper.active { opacity: 1 !important; z-index: 10 !important; }
-    .media-wrapper img, .media-wrapper video { width: 100%; height: 100%; }
+    .media-wrapper.active { opacity: 1 !important; transform: scale(1) !important; z-index: 10 !important; }
+
+    /* Capa interna: SOLO controla la rotación manual del ítem (rot-0/90/180/270).
+       Al vivir en un elemento distinto del crossfade, ambas transiciones conviven. */
+    .media-rotator { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; }
+    .media-rotator img, .media-rotator video { width: 100%; height: 100%; display: block; }
 
     .fit-cover   { object-fit: cover !important; }
     .fit-contain { object-fit: contain !important; }
@@ -405,15 +411,19 @@
       const rot = item.rotation || 0;
       const fit = item.fit || 'cover';
 
+      // Capa externa: sólo transición (opacidad + zoom). Capa interna: sólo rotación.
       const wrapper = document.createElement('div');
-      wrapper.className = `media-wrapper rot-${rot}`;
+      wrapper.className = 'media-wrapper';
+      const rotator = document.createElement('div');
+      rotator.className = `media-rotator rot-${rot}`;
 
       const activateWrapper = () => {
-        wrapper.appendChild(mediaEl);
+        rotator.appendChild(mediaEl);
+        wrapper.appendChild(rotator);
         container.appendChild(wrapper);
         requestAnimationFrame(() => {
           wrapper.classList.add("active");
-          setTimeout(() => { if (prevElement) prevElement.remove(); }, 1400);
+          setTimeout(() => { if (prevElement) prevElement.remove(); }, 1900);
           hideLoader();
           hideEmptyState();
           firstRenderDone = true;
