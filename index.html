@@ -397,9 +397,49 @@
       }
     }, 30000);
 
+    /* Recarga automática diaria: una TV puede quedar semanas prendida sin
+       reiniciarse, y con el tiempo cualquier navegador acumula memoria. Para
+       evitar que eso termine en un cuelgue, recargamos la página una vez por
+       día a una hora de bajo tránsito (por defecto, 4:00 AM hora local del TV). */
+    const AUTO_RELOAD_HOUR = 4;
+    let lastReloadCheckKey = '';
+    setInterval(() => {
+      const now = new Date();
+      const key = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}-${now.getHours()}-${now.getMinutes()}`;
+      if (key === lastReloadCheckKey) return;
+      lastReloadCheckKey = key;
+      if (now.getHours() === AUTO_RELOAD_HOUR && now.getMinutes() === 0) {
+        location.reload();
+      }
+    }, 20000);
+
     /* =========================================================
        RENDERIZADO DE SLIDES
        ========================================================= */
+    /** Al reemplazar un slide (sea por avance normal o por un cambio de contenido
+     * que llegó desde Firestore mientras algo se estaba reproduciendo), hay que
+     * "desconectar" los eventos del elemento saliente. Si no, un video que sigue
+     * reproduciéndose visualmente durante el crossfade podría disparar su propio
+     * "onended" más tarde y adelantar el índice de la playlist por las suyas,
+     * desincronizando lo que se ve. Lo dejamos correr visualmente (para no cortar
+     * el crossfade) pero ya no puede volver a llamar a nextSlide().
+     */
+    function neutralizeOutgoingMedia(prevWrapper) {
+      if (!prevWrapper) return;
+      const media = prevWrapper.querySelector('video');
+      if (media) { media.onended = null; media.onerror = null; }
+    }
+
+    /** Libera por completo los recursos de un elemento ya retirado de pantalla. */
+    function stopAndRemove(el) {
+      if (!el) return;
+      const media = el.querySelector('video');
+      if (media) {
+        try { media.pause(); media.removeAttribute('src'); media.load(); } catch (e) { /* no crítico */ }
+      }
+      el.remove();
+    }
+
     function renderCurrentSlide() {
       if (playlist.length === 0) return;
       if (stepTimeout) clearTimeout(stepTimeout);
@@ -407,6 +447,7 @@
       const item = playlist[currentIndex];
       const nextItem = playlist[(currentIndex + 1) % playlist.length];
       const prevElement = container.querySelector(".media-wrapper.active");
+      neutralizeOutgoingMedia(prevElement);
       const rot = item.rotation || 0;
       const fit = item.fit || 'cover';
 
@@ -422,7 +463,7 @@
         container.appendChild(wrapper);
         requestAnimationFrame(() => {
           wrapper.classList.add("active");
-          setTimeout(() => { if (prevElement) prevElement.remove(); }, 1600);
+          setTimeout(() => stopAndRemove(prevElement), 1600);
           hideLoader();
           hideEmptyState();
           firstRenderDone = true;
