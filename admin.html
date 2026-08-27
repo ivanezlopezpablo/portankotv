@@ -773,39 +773,51 @@
     /* =========================================================
        LISTADO DE TVs (barra superior + caché para el asignador)
        ========================================================= */
+    let lastTVsSnapshotData = []; // [{id, data}] cacheado del último snapshot, para poder re-pintar la barra al instante
+
     function listenAllTVs() {
       db.collection('portanko_tvs').onSnapshot(snapshot => {
-        tvsList = [];
-        const tvContainer = document.getElementById('tvContainer');
-        tvContainer.innerHTML = "";
-        snapshot.forEach(doc => {
-          const tvId = doc.id;
-          const data = doc.data();
-          tvsList.push({ id: tvId, name: data.name || tvId.toUpperCase() });
-
-          const wrapper = document.createElement('div');
-          wrapper.className = `tv-btn-wrapper ${tvId === currentTV ? 'active' : ''}`;
-          wrapper.innerHTML = `
-            <button class="tv-btn" onclick="selectTV('${tvId}')">
-              <span>${escapeHtml(data.name || tvId.toUpperCase())}</span>
-              <span onclick="event.stopPropagation(); showTVActions('${tvId}')" title="Opciones" style="display:inline-flex; align-items:center;">
-                <svg class="motion-icon motion-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-              </span>
-            </button>
-            <button class="flaticon-copy-btn" onclick="event.stopPropagation(); copyTVUrl('${tvId}')" title="Copiar URL directa">
-              <svg class="motion-icon motion-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            </button>`;
-          tvContainer.appendChild(wrapper);
-        });
-        if (snapshot.empty) {
-          tvContainer.innerHTML = '<span style="color:#93c5fd; font-size:13px;">No hay pantallas creadas todavía.</span>';
-        }
-        const addBtn = document.createElement('button');
-        addBtn.className = 'btn-add-tv';
-        addBtn.innerHTML = `<svg class="motion-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Agregar Nueva TV</span>`;
-        addBtn.onclick = addNewTV;
-        tvContainer.appendChild(addBtn);
+        lastTVsSnapshotData = snapshot.docs.map(doc => ({ id: doc.id, data: doc.data() }));
+        renderTVBar();
       }, err => { console.error(err); showToast('No se pudo conectar con Firestore.', true); });
+    }
+
+    /** Dibuja la barra de TVs a partir de la última data conocida. Se puede llamar
+     * en cualquier momento (por ejemplo, al cambiar de TV) para que el resaltado
+     * en rojo de la pantalla activa se actualice al instante, sin depender de que
+     * llegue un nuevo snapshot de Firestore. */
+    function renderTVBar() {
+      tvsList = [];
+      const tvContainer = document.getElementById('tvContainer');
+      tvContainer.innerHTML = "";
+
+      lastTVsSnapshotData.forEach(({ id: tvId, data }) => {
+        tvsList.push({ id: tvId, name: data.name || tvId.toUpperCase() });
+
+        const wrapper = document.createElement('div');
+        wrapper.className = `tv-btn-wrapper ${tvId === currentTV ? 'active' : ''}`;
+        wrapper.innerHTML = `
+          <button class="tv-btn" onclick="selectTV('${tvId}')">
+            <span>${escapeHtml(data.name || tvId.toUpperCase())}</span>
+            <span onclick="event.stopPropagation(); showTVActions('${tvId}')" title="Opciones" style="display:inline-flex; align-items:center;">
+              <svg class="motion-icon motion-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l-.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            </span>
+          </button>
+          <button class="flaticon-copy-btn" onclick="event.stopPropagation(); copyTVUrl('${tvId}')" title="Copiar URL directa">
+            <svg class="motion-icon motion-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>`;
+        tvContainer.appendChild(wrapper);
+      });
+
+      if (lastTVsSnapshotData.length === 0) {
+        tvContainer.innerHTML = '<span style="color:#93c5fd; font-size:13px;">No hay pantallas creadas todavía.</span>';
+      }
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'btn-add-tv';
+      addBtn.innerHTML = `<svg class="motion-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg><span>Agregar Nueva TV</span>`;
+      addBtn.onclick = addNewTV;
+      tvContainer.appendChild(addBtn);
     }
 
     function showTVActions(tvId) {
@@ -835,7 +847,11 @@
       }, true);
     }
 
-    function selectTV(tvId) { currentTV = tvId; loadTVConfig(); }
+    function selectTV(tvId) {
+      currentTV = tvId;
+      renderTVBar();   // resalta en rojo la TV recién elegida de inmediato
+      loadTVConfig();  // y recién después trae su configuración/programación
+    }
 
     /* =========================================================
        CARGA DE CONFIGURACIÓN DE LA TV ACTIVA
