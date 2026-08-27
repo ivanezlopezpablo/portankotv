@@ -116,6 +116,13 @@
     .day-tab { background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border); color: #93c5fd; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; text-transform: uppercase; transition: all 0.2s ease; }
     .day-tab:hover { background: #1e3a8a; color: #fff; }
     .day-tab.active { background: var(--accent); border-color: #ef4444; color: #fff; box-shadow: 0 0 12px rgba(153, 27, 27, 0.6); }
+    .day-tab-todos { background: linear-gradient(135deg, #b45309, #78350f); border-color: #f59e0b; color: #fff; font-weight: 700; }
+    .day-tab-todos.active { box-shadow: 0 0 14px rgba(245,158,11,0.65); border-color: #fbbf24; }
+    .day-tab-dimmed { opacity: 0.4; }
+
+    .all-days-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding: 10px 14px; background: rgba(2,6,23,0.5); border: 1px solid var(--border); border-radius: 8px; flex-wrap: wrap; }
+    .all-days-row strong { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #fbbf24; }
+    .all-days-row span.hint { font-size: 11px; color: var(--muted, #8291ae); flex: 1; min-width: 220px; }
 
     /* Mini dashboard semanal */
     .dash-scroll { overflow-x: auto; }
@@ -167,6 +174,14 @@
     .repo-item .repo-plus { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(2,6,23,0.6); color:#fff; width: 26px; height: 26px; border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 16px; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
     .repo-item:hover .repo-plus { opacity: 1; }
     .repo-empty { color:#64748b; font-size:11px; padding:10px; grid-column: 1 / -1; }
+    .repo-item.frame-item { cursor: default; }
+    .repo-item.frame-item:hover { transform: none; }
+    .repo-item.frame-item img {
+      object-fit: contain;
+      background-image: linear-gradient(45deg, #333 25%, transparent 25%), linear-gradient(-45deg, #333 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #333 75%), linear-gradient(-45deg, transparent 75%, #333 75%);
+      background-size: 12px 12px; background-position: 0 0, 0 6px, 6px -6px, -6px 0; background-color: #1a1a1a;
+    }
+    .repo-item.frame-item .repo-tag { text-transform: capitalize; }
 
     /* Lista de programación con drag & drop */
     .playlist-item { display: flex; align-items: center; justify-content: space-between; background: rgba(2, 6, 23, 0.7); padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); cursor: default; transition: opacity 0.15s, outline 0.1s; }
@@ -309,6 +324,15 @@
     </div>
   </div>
 
+  <div class="all-days-row">
+    <div class="toggle-switch" id="sameContentToggle" onclick="toggleSameContentAllDays()" title="Activar/desactivar modo 'mismo contenido todos los días'">
+      <span class="toggle-track"></span>
+      <span class="toggle-knob"></span>
+    </div>
+    <strong>Mismo contenido todos los días</strong>
+    <span class="hint">Si lo activás, esta TV ignora el día de la semana y siempre muestra la programación de "★ Todos los días" (la pestaña dorada de abajo). Los 7 días individuales quedan guardados, listos para cuando lo desactives.</span>
+  </div>
+
   <div class="days-bar" id="daysContainer"></div>
 
   <div class="main-grid">
@@ -440,6 +464,61 @@
         <p class="section-subtitle">Tocá un archivo para elegir en qué pantallas y qué días se muestra.</p>
         <input type="text" id="repoSearch" placeholder="Buscar por título..." oninput="renderRepository()" style="margin-bottom:10px;">
         <div class="repo-grid" id="repoGrid"><div class="repo-empty">Cargando repositorio...</div></div>
+      </div>
+
+      <div class="section-card">
+        <h3 class="section-title">
+          <span>Marcos — Nube Interna</span>
+          <small style="font-size:11px; color:#38bdf8;" id="frameRepoCounter">0 marcos</small>
+        </h3>
+        <p class="section-subtitle">Subí PNG con transparencia. Se eligen desde "Editar" o al asignar un contenido a una TV/día.</p>
+        <div class="form-row">
+          <div style="flex: 2;">
+            <label>Título</label>
+            <input type="text" id="frameTitle" placeholder="Ej: Marco Navideño Dorado">
+          </div>
+          <div style="flex: 1;">
+            <label>Categoría</label>
+            <select id="frameCategory">
+              <option value="general">General</option>
+              <option value="navidad">Navidad</option>
+              <option value="anio_nuevo">Año Nuevo</option>
+              <option value="san_valentin">San Valentín</option>
+              <option value="dia_madre">Día de la Madre</option>
+              <option value="dia_padre">Día del Padre</option>
+              <option value="pascuas">Pascuas</option>
+              <option value="halloween">Halloween</option>
+              <option value="aniversario">Aniversario / Fiestas Patrias</option>
+              <option value="ofertas">Ofertas / Promociones</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div style="flex: 1;">
+            <label>Archivo PNG (con transparencia)</label>
+            <input type="file" id="frameFileInput" accept="image/png">
+          </div>
+        </div>
+        <button class="btn-action blue" onclick="uploadFrame()" id="uploadFrameBtn">Subir Marco</button>
+        <div class="form-row" style="margin-top:14px;">
+          <div style="flex:1;">
+            <label>Filtrar por categoría</label>
+            <select id="frameCategoryFilter" onchange="renderFrameRepository()">
+              <option value="">Todas las categorías</option>
+              <option value="general">General</option>
+              <option value="navidad">Navidad</option>
+              <option value="anio_nuevo">Año Nuevo</option>
+              <option value="san_valentin">San Valentín</option>
+              <option value="dia_madre">Día de la Madre</option>
+              <option value="dia_padre">Día del Padre</option>
+              <option value="pascuas">Pascuas</option>
+              <option value="halloween">Halloween</option>
+              <option value="aniversario">Aniversario / Fiestas Patrias</option>
+              <option value="ofertas">Ofertas / Promociones</option>
+            </select>
+          </div>
+        </div>
+        <div class="repo-grid" id="frameGrid"><div class="repo-empty">Cargando marcos...</div></div>
       </div>
 
       <div class="section-card">
@@ -627,7 +706,15 @@
     let tvData = {};              // documento completo de la TV activa
     let tvsList = [];             // [{id, name}] de todas las TVs, para el popup de asignación
     let mediaRepository = [];     // repositorio GLOBAL, compartido entre TVs
+    let frameRepository = [];     // repositorio GLOBAL de marcos (overlays), compartido entre TVs
     let dragFromIndex = null;     // índice de origen durante el arrastre
+
+    const FRAME_CATEGORY_LABELS = {
+      general: 'General', navidad: 'Navidad', anio_nuevo: 'Año Nuevo',
+      san_valentin: 'San Valentín', dia_madre: 'Día de la Madre', dia_padre: 'Día del Padre',
+      pascuas: 'Pascuas', halloween: 'Halloween', aniversario: 'Aniversario / Fiestas Patrias',
+      ofertas: 'Ofertas / Promociones'
+    };
 
     function uid() {
       return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('id-' + Date.now() + '-' + Math.random().toString(16).slice(2));
@@ -636,12 +723,13 @@
       return String(str == null ? '' : str).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
     }
     function emptyScheduleTemplate() {
-      const sched = {};
+      const sched = { todos: [] }; // bucket especial: se usa cuando sameContentAllDays está activo
       DAYS.forEach(d => sched[d.id] = []);
       return sched;
     }
     function ensureScheduleShape(data) {
       if (!data.schedule) data.schedule = emptyScheduleTemplate();
+      if (!Array.isArray(data.schedule.todos)) data.schedule.todos = [];
       DAYS.forEach(d => { if (!Array.isArray(data.schedule[d.id])) data.schedule[d.id] = []; });
       return data;
     }
@@ -776,9 +864,17 @@
     function renderDaysBar() {
       const bar = document.getElementById('daysContainer');
       bar.innerHTML = "";
+
+      const todosTab = document.createElement('div');
+      todosTab.className = `day-tab day-tab-todos ${currentDay === 'todos' ? 'active' : ''}`;
+      todosTab.innerHTML = '★ Todos los días';
+      todosTab.onclick = () => selectDay('todos');
+      bar.appendChild(todosTab);
+
       DAYS.forEach(d => {
         const tab = document.createElement('div');
-        tab.className = `day-tab ${d.id === currentDay ? 'active' : ''}`;
+        tab.className = `day-tab ${d.id === currentDay ? 'active' : ''} ${tvData.sameContentAllDays ? 'day-tab-dimmed' : ''}`;
+        tab.title = tvData.sameContentAllDays ? 'No se está usando mientras el modo "Todos los días" esté activo' : '';
         tab.innerText = d.label;
         tab.onclick = () => selectDay(d.id);
         bar.appendChild(tab);
@@ -787,8 +883,32 @@
     function selectDay(day) {
       currentDay = day;
       renderDaysBar();
-      document.getElementById('subfolderTitle').innerText = DAYS.find(d => d.id === day).label.toUpperCase();
+      const label = day === 'todos' ? 'TODOS LOS DÍAS' : DAYS.find(d => d.id === day).label.toUpperCase();
+      document.getElementById('subfolderTitle').innerText = label;
       renderDaySchedule();
+    }
+
+    /** Prende/apaga el modo "mismo contenido todos los días" para la TV activa.
+     * Al activarlo, el reproductor va a ignorar el día de la semana y usar
+     * siempre el bucket especial "todos". La programación de cada día real
+     * queda intacta en Firestore, lista para cuando se desactive. */
+    async function toggleSameContentAllDays() {
+      const newVal = !tvData.sameContentAllDays;
+      tvData.sameContentAllDays = newVal;
+      renderSameContentToggle();
+      selectDay(newVal ? 'todos' : 'lunes');
+      try {
+        await db.collection('portanko_tvs').doc(currentTV).set({ sameContentAllDays: newVal }, { merge: true });
+        showToast(newVal ? 'Modo "todos los días" activado.' : 'Modo desactivado — volviste a la programación por día.');
+      } catch (e) {
+        console.error(e);
+        showToast('No se pudo guardar el cambio.', true);
+      }
+    }
+
+    function renderSameContentToggle() {
+      const el = document.getElementById('sameContentToggle');
+      if (el) el.classList.toggle('is-on', !!tvData.sameContentAllDays);
     }
 
     /** Cambia de día Y desplaza la pantalla hasta la programación — usado desde el mini dashboard. */
@@ -880,8 +1000,9 @@
      * de la TV activa que todavía no tienen "durationSeconds" guardado. */
     async function ensureScheduleVideoDurations() {
       if (!tvData.schedule) return;
+      const scheduleKeys = ['todos', ...DAYS.map(d => d.id)];
       const urlsNeeded = new Set();
-      DAYS.forEach(d => (tvData.schedule[d.id] || []).forEach(item => {
+      scheduleKeys.forEach(key => (tvData.schedule[key] || []).forEach(item => {
         if (item.type === 'video' && item.durationSeconds == null && !videoDurationMeasuring.has(item.url)) {
           urlsNeeded.add(item.url);
         }
@@ -894,7 +1015,7 @@
         const seconds = await measureVideoDurationByUrl(url);
         videoDurationMeasuring.delete(url);
         if (seconds != null) {
-          DAYS.forEach(d => (tvData.schedule[d.id] || []).forEach(item => {
+          scheduleKeys.forEach(key => (tvData.schedule[key] || []).forEach(item => {
             if (item.type === 'video' && item.url === url && item.durationSeconds == null) {
               item.durationSeconds = seconds;
               changed = true;
@@ -934,21 +1055,25 @@
       return m > 0 ? `${m}m ${s}s` : `${s}s`;
     }
 
+    function computeStatsForList(fullList) {
+      const list = fullList.filter(i => i.active !== false);
+      const vids = list.filter(i => i.type === 'video');
+      const imgs = list.filter(i => i.type !== 'video');
+      const imgSeconds = imgs.reduce((s, i) => s + (i.duration || 7), 0);
+      const knownVids = vids.filter(v => typeof v.durationSeconds === 'number');
+      const vidSeconds = knownVids.reduce((s, i) => s + i.durationSeconds, 0);
+      return {
+        total: list.length, imgCount: imgs.length, vidCount: vids.length,
+        imgSeconds, vidSeconds, unknownVidCount: vids.length - knownVids.length,
+        inactiveCount: fullList.length - list.length
+      };
+    }
+
     function computeAllDaysStats() {
       const stats = {};
+      stats.todos = computeStatsForList((tvData.schedule && tvData.schedule.todos) || []);
       DAYS.forEach(d => {
-        const fullList = (tvData.schedule && tvData.schedule[d.id]) || [];
-        const list = fullList.filter(i => i.active !== false);
-        const vids = list.filter(i => i.type === 'video');
-        const imgs = list.filter(i => i.type !== 'video');
-        const imgSeconds = imgs.reduce((s, i) => s + (i.duration || 7), 0);
-        const knownVids = vids.filter(v => typeof v.durationSeconds === 'number');
-        const vidSeconds = knownVids.reduce((s, i) => s + i.durationSeconds, 0);
-        stats[d.id] = {
-          total: list.length, imgCount: imgs.length, vidCount: vids.length,
-          imgSeconds, vidSeconds, unknownVidCount: vids.length - knownVids.length,
-          inactiveCount: fullList.length - list.length
-        };
+        stats[d.id] = computeStatsForList((tvData.schedule && tvData.schedule[d.id]) || []);
       });
       return stats;
     }
@@ -959,30 +1084,41 @@
       document.getElementById('dashTvName').innerText = (tvsList.find(t => t.id === currentTV) || {}).name || currentTV;
 
       const stats = computeAllDaysStats();
-      let weekItems = 0, weekSeconds = 0, weekUnknownVid = 0, weekInactive = 0;
+      const sameMode = !!tvData.sameContentAllDays;
 
-      const rows = DAYS.map(d => {
-        const st = stats[d.id];
-        weekItems += st.total;
-        weekSeconds += st.imgSeconds + st.vidSeconds;
-        weekUnknownVid += st.unknownVidCount;
-        weekInactive += st.inactiveCount;
+      const renderRow = (id, label, st, isSpecial) => {
         const knownTotal = st.imgSeconds + st.vidSeconds;
+        const dimmed = sameMode && !isSpecial; // los días reales no se usan mientras el modo esté activo
         return `
-          <div class="dash-row ${d.id === currentDay ? 'active' : ''}" onclick="goToDay('${d.id}')">
-            <span class="dash-day">${d.label}</span>
+          <div class="dash-row ${id === currentDay ? 'active' : ''}" style="${dimmed ? 'opacity:0.4;' : ''}" onclick="goToDay('${id}')">
+            <span class="dash-day">${isSpecial ? '★ ' : ''}${label}</span>
             <span class="dash-metric">${st.total} ítem(s)${st.inactiveCount ? ` <small>(+${st.inactiveCount} desact.)</small>` : ''}</span>
             <span class="dash-metric">${st.imgCount} img · ${st.vidCount} video(s)${st.unknownVidCount ? ` <small>(${st.unknownVidCount} sin medir)</small>` : ''}</span>
             <span class="dash-metric">${formatDuration(knownTotal)}${st.unknownVidCount ? ' +' : ''}</span>
-            <button class="dash-go" onclick="event.stopPropagation(); goToDay('${d.id}')">Ir →</button>
+            <button class="dash-go" onclick="event.stopPropagation(); goToDay('${id}')">Ir →</button>
           </div>`;
-      }).join('');
+      };
 
+      let rows = renderRow('todos', 'Todos los días', stats.todos, true);
+      rows += DAYS.map(d => renderRow(d.id, d.label, stats[d.id], false)).join('');
       container.innerHTML = rows;
-      document.getElementById('dashWeekTotal').innerText =
-        `${weekItems} ítem(s) en pantalla en la semana · ~${formatDuration(weekSeconds)}` +
-        (weekUnknownVid ? ` (+${weekUnknownVid} video(s) sin medir)` : '') +
-        (weekInactive ? ` · ${weekInactive} desactivado(s)` : '');
+
+      if (sameMode) {
+        document.getElementById('dashWeekTotal').innerText =
+          `Modo "todos los días" activo · ${stats.todos.total} ítem(s) · ~${formatDuration(stats.todos.imgSeconds + stats.todos.vidSeconds)} (se repite los 7 días)`;
+      } else {
+        let weekItems = 0, weekSeconds = 0, weekUnknownVid = 0, weekInactive = 0;
+        DAYS.forEach(d => {
+          weekItems += stats[d.id].total;
+          weekSeconds += stats[d.id].imgSeconds + stats[d.id].vidSeconds;
+          weekUnknownVid += stats[d.id].unknownVidCount;
+          weekInactive += stats[d.id].inactiveCount;
+        });
+        document.getElementById('dashWeekTotal').innerText =
+          `${weekItems} ítem(s) en pantalla en la semana · ~${formatDuration(weekSeconds)}` +
+          (weekUnknownVid ? ` (+${weekUnknownVid} video(s) sin medir)` : '') +
+          (weekInactive ? ` · ${weekInactive} desactivado(s)` : '');
+      }
     }
 
     /* =========================================================
@@ -1200,6 +1336,7 @@
         document.getElementById('legalBannerText').value = tvData.legalBanner.text || "";
         document.getElementById('showLegalBanner').value = tvData.legalBanner.show === false ? "false" : "true";
         document.getElementById('transitionEffectSelect').value = TRANSITION_EFFECTS[tvData.transitionEffect] ? tvData.transitionEffect : DEFAULT_TRANSITION;
+        renderSameContentToggle();
 
         updatePreviewOrientation();
         updateBannerPreview();
@@ -1425,6 +1562,7 @@
           const data = doc.data();
           if (!data.schedule) return;
           const dayLabels = [];
+          if ((data.schedule.todos || []).some(item => item.mediaId === mediaId)) dayLabels.push('★ Todos los días');
           DAYS.forEach(d => {
             const list = data.schedule[d.id] || [];
             if (list.some(item => item.mediaId === mediaId)) dayLabels.push(d.label);
@@ -1433,6 +1571,136 @@
         });
       } catch (e) { console.warn('No se pudo verificar en qué TVs está en uso el archivo:', e); }
       return usage;
+    }
+
+    /* =========================================================
+       NUBE INTERNA DE MARCOS (overlays por categoría/festividad)
+       ========================================================= */
+    function listenGlobalFrameRepository() {
+      db.collection('portanko_frames').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        frameRepository = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        renderFrameRepository();
+      }, err => { console.error(err); showToast('No se pudo cargar los marcos.', true); });
+    }
+
+    function renderFrameRepository() {
+      const grid = document.getElementById('frameGrid');
+      const counter = document.getElementById('frameRepoCounter');
+      if (counter) counter.innerText = `${frameRepository.length} marco(s)`;
+      if (!grid) return;
+
+      const filterEl = document.getElementById('frameCategoryFilter');
+      const filterVal = filterEl ? filterEl.value : '';
+      const filtered = filterVal ? frameRepository.filter(f => f.category === filterVal) : frameRepository;
+
+      if (frameRepository.length === 0) {
+        grid.innerHTML = '<div class="repo-empty">Todavía no subiste ningún marco.</div>';
+        return;
+      }
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="repo-empty">Ningún marco en esa categoría.</div>';
+        return;
+      }
+      grid.innerHTML = '';
+      filtered.forEach(frame => {
+        const div = document.createElement('div');
+        div.className = 'repo-item frame-item';
+        div.title = frame.title || '';
+        div.innerHTML = `
+          <img src="${escapeHtml(frame.url)}" onerror="this.src=''">
+          <span class="repo-tag">${escapeHtml(frame.title || 'Sin título')} · ${escapeHtml(FRAME_CATEGORY_LABELS[frame.category] || frame.category || 'General')}</span>
+          <button class="repo-del" title="Borrar marco" onclick="event.stopPropagation(); requestDeleteFrame('${frame.id}')">×</button>`;
+        grid.appendChild(div);
+      });
+    }
+
+    async function uploadFrame() {
+      const fileInput = document.getElementById('frameFileInput');
+      const file = fileInput.files[0];
+      if (!file) return showToast('Seleccioná un archivo PNG primero.', true);
+      if (!file.type.includes('png')) return showToast('El marco tiene que ser un PNG con transparencia.', true);
+
+      const loader = document.getElementById('uploadLoader');
+      const btn = document.getElementById('uploadFrameBtn');
+      document.getElementById('uploadLoaderText').innerText = 'Subiendo marco a la nube...';
+      loader.classList.add('active');
+      btn.disabled = true;
+
+      try {
+        const storagePath = `portanko/frames/${Date.now()}_${file.name}`;
+        const storageRef = storage.ref(storagePath);
+        const snapshot = await storageRef.put(file);
+        const downloadURL = await snapshot.ref.getDownloadURL();
+
+        await db.collection('portanko_frames').add({
+          title: document.getElementById('frameTitle').value || file.name,
+          category: document.getElementById('frameCategory').value || 'general',
+          url: downloadURL,
+          storagePath,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        fileInput.value = '';
+        document.getElementById('frameTitle').value = '';
+        showToast('Marco subido a la nube interna.');
+      } catch (err) {
+        console.error(err);
+        showToast('Error al subir el marco.', true);
+      } finally {
+        loader.classList.remove('active');
+        btn.disabled = false;
+      }
+    }
+
+    async function findFrameUsage(frameId) {
+      const usage = [];
+      try {
+        const snap = await db.collection('portanko_tvs').get();
+        snap.forEach(doc => {
+          const data = doc.data();
+          if (!data.schedule) return;
+          const dayLabels = [];
+          if ((data.schedule.todos || []).some(item => item.frameId === frameId)) dayLabels.push('★ Todos los días');
+          DAYS.forEach(d => {
+            if ((data.schedule[d.id] || []).some(item => item.frameId === frameId)) dayLabels.push(d.label);
+          });
+          if (dayLabels.length > 0) usage.push({ tvName: data.name || doc.id, dayLabels });
+        });
+      } catch (e) { console.warn('No se pudo verificar en qué TVs está en uso el marco:', e); }
+      return usage;
+    }
+
+    async function doDeleteFrame(frame) {
+      try {
+        await db.collection('portanko_frames').doc(frame.id).delete();
+        if (frame.storagePath) { try { await storage.ref(frame.storagePath).delete(); } catch (e) { /* no crítico */ } }
+        showToast('Marco eliminado de la nube interna.');
+      } catch (err) {
+        console.error(err);
+        showToast('No se pudo eliminar el marco.', true);
+      }
+    }
+
+    async function requestDeleteFrame(frameId) {
+      const frame = frameRepository.find(f => f.id === frameId);
+      if (!frame) return;
+      const usage = await findFrameUsage(frameId);
+
+      if (usage.length > 0) {
+        const listHtml = usage.map(u => `• <strong>${escapeHtml(u.tvName)}</strong>: ${u.dayLabels.join(', ')}`).join('<br>');
+        document.getElementById('modalTitle').innerText = 'ESTE MARCO ESTÁ EN USO';
+        document.getElementById('modalBody').innerHTML = `
+          <p style="margin-bottom:12px;">Todavía está aplicado en:</p>
+          <p style="margin-bottom:16px; font-size:12px; color:#93c5fd; line-height:1.8;">${listHtml}</p>
+          <p>Si lo eliminás ahora, esos contenidos van a dejar de mostrarlo. ¿Igual querés eliminarlo?</p>`;
+        document.getElementById('modalActions').innerHTML = `
+          <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+          <button class="btn-modal-danger" id="forceDeleteFrameBtn">Eliminar de todas formas</button>`;
+        document.getElementById('forceDeleteFrameBtn').onclick = () => { closeModal(); doDeleteFrame(frame); };
+        document.getElementById('customModal').classList.add('active');
+        return;
+      }
+      showConfirmModal('ELIMINAR MARCO', `¿Eliminar "${frame.title || 'este marco'}" de la nube interna?`, () => doDeleteFrame(frame), true);
     }
 
     async function doDeleteRepoItem(mediaId) {
@@ -1481,7 +1749,9 @@
         ? tvsList.map(tv => `<label><input type="checkbox" class="assign-tv" value="${tv.id}" ${tv.id === currentTV ? 'checked' : ''}> ${escapeHtml(tv.name)}</label>`).join('')
         : '<small style="color:#64748b;">No hay TVs creadas todavía.</small>';
 
-      const dayCheckboxes = DAYS.map(d => `<label><input type="checkbox" class="assign-day" value="${d.id}" ${d.id === currentDay ? 'checked' : ''}> ${d.label}</label>`).join('');
+      const dayCheckboxes =
+        `<label style="color:#fbbf24; font-weight:700;"><input type="checkbox" class="assign-day" value="todos" ${currentDay === 'todos' ? 'checked' : ''}> ★ Todos los días</label>` +
+        DAYS.map(d => `<label><input type="checkbox" class="assign-day" value="${d.id}" ${d.id === currentDay ? 'checked' : ''}> ${d.label}</label>`).join('');
 
       document.getElementById('modalTitle').innerText = 'ASIGNAR CONTENIDO A PANTALLAS Y DÍAS';
       document.getElementById('modalBody').innerHTML = `
@@ -1528,7 +1798,13 @@
         ${media.type !== 'video' ? `
         <div class="form-row checkline">
           <label style="margin:0; text-transform:none;"><input type="checkbox" id="assignKenBurns" style="width:auto;" ${media.kenBurns ? 'checked' : ''}> Efecto Ken Burns (acercamiento suave)</label>
-        </div>` : ''}`;
+        </div>` : ''}
+        <div class="form-row">
+          <div style="flex:1;">
+            <label>Marco (opcional, aplica a imágenes y videos)</label>
+            <select id="assignFrame">${buildFrameOptionsHtml(null)}</select>
+          </div>
+        </div>`;
       document.getElementById('modalActions').innerHTML = `
         <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
         <button class="btn-modal-confirm" onclick="confirmAssignMedia('${mediaId}')">Asignar</button>`;
@@ -1551,6 +1827,8 @@
       const fit = document.getElementById('assignFit').value;
       const kenBurnsEl = document.getElementById('assignKenBurns');
       const kenBurns = media.type !== 'video' && !!(kenBurnsEl && kenBurnsEl.checked);
+      const assignFrameId = document.getElementById('assignFrame').value || null;
+      const assignFrame = assignFrameId ? frameRepository.find(f => f.id === assignFrameId) : null;
 
       closeModal();
       const loader = document.getElementById('uploadLoader');
@@ -1574,6 +1852,8 @@
               durationSeconds: media.type === 'video' ? (media.durationSeconds ?? null) : null,
               rotation, fit, kenBurns,
               badgeText: media.badgeText || null,
+              frameId: assignFrame ? assignFrame.id : null,
+              frameUrl: assignFrame ? assignFrame.url : null,
               active: true
             });
           });
@@ -1692,6 +1972,25 @@
       await reorderDayList(index, newIndex);
     }
 
+    /** Arma el <select> de marcos, agrupado por categoría/festividad. */
+    function buildFrameOptionsHtml(selectedFrameId) {
+      let html = `<option value="">-- Sin marco --</option>`;
+      if (frameRepository.length === 0) return html;
+      const byCategory = {};
+      frameRepository.forEach(f => {
+        const cat = f.category || 'general';
+        (byCategory[cat] = byCategory[cat] || []).push(f);
+      });
+      Object.keys(byCategory).forEach(cat => {
+        html += `<optgroup label="${escapeHtml(FRAME_CATEGORY_LABELS[cat] || cat)}">`;
+        byCategory[cat].forEach(f => {
+          html += `<option value="${f.id}" ${f.id === selectedFrameId ? 'selected' : ''}>${escapeHtml(f.title || 'Sin título')}</option>`;
+        });
+        html += `</optgroup>`;
+      });
+      return html;
+    }
+
     function openEditItemModal(index) {
       const item = tvData.schedule[currentDay][index];
       document.getElementById('modalTitle').innerText = "EDITAR PROPIEDADES DE SLIDE";
@@ -1720,7 +2019,7 @@
             <option value="contain" ${item.fit === 'contain' ? 'selected' : ''}>Ajustar Entera (Contain)</option>
           </select>
         </div>
-        <div>
+        <div style="margin-bottom:12px;">
           <label>Insignia</label>
           <select id="editBadge">
             <option value="" ${!item.badgeText ? 'selected' : ''}>-- Sin Insignia --</option>
@@ -1729,6 +2028,10 @@
             <option value="EN ALQUILER" ${item.badgeText === 'EN ALQUILER' ? 'selected' : ''}>EN ALQUILER</option>
             <option value="CONSULTA LEGAL" ${item.badgeText === 'CONSULTA LEGAL' ? 'selected' : ''}>CONSULTA LEGAL</option>
           </select>
+        </div>
+        <div>
+          <label>Marco (aplica a imágenes y videos)</label>
+          <select id="editFrame">${buildFrameOptionsHtml(item.frameId)}</select>
         </div>
         ${item.type !== 'video' ? `
         <div style="margin-top:12px;">
@@ -1750,6 +2053,10 @@
       item.rotation = parseInt(document.getElementById('editRotation').value) || 0;
       item.fit = document.getElementById('editFit').value;
       item.badgeText = document.getElementById('editBadge').value || null;
+      const frameId = document.getElementById('editFrame').value || null;
+      const frame = frameId ? frameRepository.find(f => f.id === frameId) : null;
+      item.frameId = frame ? frame.id : null;
+      item.frameUrl = frame ? frame.url : null;
       const kenBurnsEl = document.getElementById('editKenBurns');
       item.kenBurns = kenBurnsEl ? kenBurnsEl.checked : false;
       closeModal();
@@ -1927,6 +2234,7 @@
       listenAllTVs();
       listenGlobalRepository();
       listenGlobalAudioRepository();
+      listenGlobalFrameRepository();
       loadTVConfig();
       loadAccessKeyword();
       // Refresca los puntos de estado ("hace X min") aunque no llegue data nueva de Firestore.
