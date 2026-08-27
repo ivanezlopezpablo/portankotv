@@ -21,37 +21,143 @@
 
     .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent); padding-bottom: 16px; margin-bottom: 24px; }
     
-    /* Botonera dinámica de TVs */
-    .tv-bar { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
-    .tv-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .tv-btn.active { background: var(--accent); border-color: var(--accent); }
-    .btn-add-tv { background: #10b981; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .tv-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+    
+    .tv-btn { 
+      background: var(--card); 
+      border: 2px solid var(--border); 
+      color: var(--text); 
+      padding: 10px 18px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: 600; 
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-    .main-grid { display: grid; grid-template-columns: 1fr 420px; gap: 24px; }
+    .tv-btn:hover { 
+      border-color: var(--accent); 
+      transform: translateY(-2px); 
+      background: #283548;
+      box-shadow: 0 8px 15px -3px rgba(217, 119, 6, 0.25);
+    }
+
+    .tv-btn.active { 
+      background: linear-gradient(135deg, #d97706 0%, #b45309 100%); 
+      border-color: #f59e0b; 
+      color: #fff;
+      transform: scale(1.04);
+      box-shadow: 0 0 20px rgba(217, 119, 6, 0.6);
+    }
+
+    .btn-add-tv { 
+      background: #10b981; 
+      color: #fff; 
+      border: none; 
+      padding: 10px 18px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: bold; 
+      transition: all 0.2s;
+    }
+
+    .btn-add-tv:hover { background: #059669; transform: translateY(-2px); }
+
+    .main-grid { display: grid; grid-template-columns: 1fr 440px; gap: 24px; }
 
     .section-card { background: var(--card); padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
     .section-title { color: var(--accent); font-size: 15px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
 
     .form-row { display: flex; gap: 16px; margin-bottom: 14px; align-items: center; }
-    label { font-size: 11px; text-transform: uppercase; color: #94a3b8; display: block; margin-bottom: 4px; }
+    label { font-size: 11px; text-transform: uppercase; color: #94a3b8; display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
     input, select, textarea { background: #0f172a; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; width: 100%; font-size: 13px; }
 
-    .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; }
+    .btn-action { background: var(--accent); color: #fff; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 10px; transition: background 0.2s; }
+    .btn-action:hover { background: var(--accent-hover); }
 
-    /* Drag & Drop Canvas Preview */
-    .preview-stage { width: 100%; height: 500px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
-    .preview-screen { width: 320px; height: 180px; background: #111; transition: transform 0.5s ease-in-out; position: relative; overflow: hidden; user-select: none; }
+    .info-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #334155;
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid #475569;
+      transition: all 0.2s;
+    }
+
+    .info-btn:hover {
+      background: #38bdf8;
+      color: #0f172a;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+    }
+
+    /* Modal / Popup */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(2, 6, 23, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .modal-card {
+      background: var(--card);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 460px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+      transform: translateY(-20px);
+      transition: transform 0.25s ease;
+    }
+
+    .modal-overlay.active .modal-card { transform: translateY(0); }
+
+    .modal-title { color: var(--accent); font-size: 18px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+    .modal-body { font-size: 14px; color: #cbd5e1; line-height: 1.5; margin-bottom: 24px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
+
+    .btn-modal-cancel { background: #334155; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-modal-confirm { background: var(--accent); color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-modal-danger { background: #ef4444; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+    /* Stage de Vista Previa y Simulador de Pulgadas (32" a 50") */
+    .preview-stage { width: 100%; height: 540px; background: #000; border-radius: 8px; display: flex; justify-content: center; align-items: center; overflow: hidden; position: relative; border: 2px dashed var(--border); }
+    .preview-screen { background: #111; transition: all 0.4s ease-in-out; position: relative; overflow: hidden; user-select: none; border: 2px solid #475569; }
     
-    .preview-screen.orient-0 { transform: rotate(0deg); width: 320px; height: 180px; }
-    .preview-screen.orient-90 { transform: rotate(90deg); width: 280px; height: 157px; }
-    .preview-screen.orient-270 { transform: rotate(270deg); width: 280px; height: 157px; }
+    /* Escalas según orientación y pulgadas */
+    .preview-screen.orient-0.size-32 { width: 280px; height: 157px; }
+    .preview-screen.orient-0.size-40 { width: 320px; height: 180px; }
+    .preview-screen.orient-0.size-43 { width: 340px; height: 191px; }
+    .preview-screen.orient-0.size-50 { width: 380px; height: 213px; }
 
-    .preview-screen img.bg-media, .preview-screen video.bg-media { width: 100%; height: 100%; object-fit: cover; }
+    .preview-screen.orient-90.size-32, .preview-screen.orient-270.size-32 { width: 230px; height: 129px; }
+    .preview-screen.orient-90.size-40, .preview-screen.orient-270.size-40 { width: 270px; height: 151px; }
+    .preview-screen.orient-90.size-43, .preview-screen.orient-270.size-43 { width: 290px; height: 163px; }
+    .preview-screen.orient-90.size-50, .preview-screen.orient-270.size-50 { width: 330px; height: 185px; }
 
-    /* Insignias arrastrables (Badges) */
+    .preview-screen.orient-90 { transform: rotate(90deg); }
+    .preview-screen.orient-270 { transform: rotate(270deg); }
+
     .draggable-badge { position: absolute; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; color: #fff; cursor: move; z-index: 20; box-shadow: 0 2px 6px rgba(0,0,0,0.6); }
-
-    /* Banner legal e info */
     .legal-banner-overlay { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: #fff; font-size: 8px; padding: 4px; text-align: center; z-index: 15; }
 
     .playlist-item { display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
@@ -65,19 +171,24 @@
     <button onclick="logout()" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">Cerrar Sesión</button>
   </div>
 
-  <!-- Botonera Dinámica de TVs -->
   <div class="tv-bar" id="tvContainer">
     <span style="color:#94a3b8; font-size:13px;">Cargando pantallas...</span>
   </div>
 
   <div class="main-grid">
     <div>
-      <!-- Ajustes Generales y Audio -->
+      <!-- Ajustes de Pantalla, Pulgadas y Audio -->
       <div class="section-card">
-        <h3 class="section-title">Ajustes de Pantalla & Música de Fondo</h3>
+        <h3 class="section-title">
+          <span>Ajustes de Pantalla & Música</span>
+          <span class="info-btn" onclick="showInfoModal('Ajustes de Pantalla', 'Configura la orientación responsive (0°, 90°, 270°) y selecciona el tamaño de TV en pulgadas para simular la vista previa real.')">?</span>
+        </h3>
         <div class="form-row">
           <div style="flex: 1;">
-            <label>Orientación</label>
+            <label>
+              Orientación
+              <span class="info-btn" onclick="showInfoModal('Orientación', 'Usar 270° o 90° si el televisor está instalado de costado en formato totem.')">?</span>
+            </label>
             <select id="orientationSelect" onchange="updatePreviewOrientation()">
               <option value="0">Horizontal (0°)</option>
               <option value="90">Vertical Derecha (90°)</option>
@@ -85,7 +196,22 @@
             </select>
           </div>
           <div style="flex: 1;">
-            <label>Música de Fondo</label>
+            <label>
+              Pulgadas TV
+              <span class="info-btn" onclick="showInfoModal('Tamaño de TV', 'Simula la escala visual en pantalla física desde 32 pulgadas hasta 50 pulgadas.')">?</span>
+            </label>
+            <select id="sizeSelect" onchange="updatePreviewOrientation()">
+              <option value="32">32 Pulgadas</option>
+              <option value="40">40 Pulgadas</option>
+              <option value="43" selected>43 Pulgadas</option>
+              <option value="50">50 Pulgadas</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label>
+              Música de Fondo
+              <span class="info-btn" onclick="showInfoModal('Música de Fondo', 'Activa o silencia el audio ambiental para esta pantalla específica.')">?</span>
+            </label>
             <select id="audioEnabled">
               <option value="true">Activado</option>
               <option value="false">Silenciado</option>
@@ -94,7 +220,7 @@
         </div>
         <div class="form-row">
           <div style="flex: 3;">
-            <label>URL del MP3</label>
+            <label>URL del Archivo MP3</label>
             <input type="text" id="audioUrl" placeholder="https://firebasestorage.googleapis.com/...">
           </div>
           <div style="flex: 1;">
@@ -102,57 +228,54 @@
             <input type="number" id="audioVolume" step="0.1" min="0" max="1" value="0.5">
           </div>
         </div>
-        <button class="btn-action" onclick="saveTVConfig()">Guardar Ajustes de TV</button>
+        <button class="btn-action" onclick="requestSaveTVConfig()">Guardar Ajustes de TV</button>
       </div>
 
-      <!-- Módulo Estilo Mayorga: Carga de Ficha (Propiedad/Servicio) con Insignia -->
+      <!-- Carga Multimedia -->
       <div class="section-card">
-        <h3 class="section-title">Agregar Nueva Ficha / Producto con Insignia</h3>
+        <h3 class="section-title">
+          <span>Subir Nuevo Contenido (Imagen / Video)</span>
+          <span class="info-btn" onclick="showInfoModal('Gestor Multimedia', 'Sube placas, flyers editados, renders o videos MP4.')">?</span>
+        </h3>
         <div class="form-row">
           <div style="flex: 2;">
-            <label>Título / Propiedad</label>
-            <input type="text" id="itemTitle" placeholder="Ej: Lote Residencial Añelo">
+            <label>Título / Referencia (Opcional)</label>
+            <input type="text" id="itemTitle" placeholder="Ej: Video Institucional o Flyer">
           </div>
           <div style="flex: 1;">
-            <label>Valor / Precio</label>
-            <input type="text" id="itemPrice" placeholder="Ej: USD 45.000">
-          </div>
-        </div>
-        <div class="form-row">
-          <div style="flex: 1;">
-            <label>Insignia Destacada</label>
+            <label>Insignia (Opcional)</label>
             <select id="badgeSelect" onchange="updateBadgeText()">
+              <option value="">-- Sin Insignia --</option>
               <option value="OPORTUNIDAD">OPORTUNIDAD</option>
               <option value="VENDIDO">VENDIDO</option>
               <option value="EN ALQUILER">EN ALQUILER</option>
               <option value="CONSULTA LEGAL">CONSULTA LEGAL</option>
             </select>
           </div>
-          <div style="flex: 1;">
-            <label>Color de Insignia</label>
-            <input type="color" id="badgeColor" value="#d97706" onchange="updateBadgeColor()">
-          </div>
-          <div style="flex: 1;">
-            <label>Duración Imagen (s)</label>
-            <input type="number" id="mediaDuration" value="7" min="1">
-          </div>
         </div>
         <div class="form-row">
           <div style="flex: 1;">
-            <label>Archivo Multimedia (Foto / Video MP4)</label>
+            <label>Duración Imagen (Segs)</label>
+            <input type="number" id="mediaDuration" value="7" min="1">
+          </div>
+          <div style="flex: 2;">
+            <label>Archivo Multimedia (Imagen / MP4)</label>
             <input type="file" id="mediaFileInput" accept="image/*,video/mp4">
           </div>
         </div>
-        <button class="btn-action" style="background:#2563eb;" onclick="uploadMedia()">Subir e Integrar a la TV</button>
+        <button class="btn-action" style="background:#2563eb;" onclick="uploadMedia()">Subir e Integrar a esta TV</button>
       </div>
 
-      <!-- Banner Legal Dinámico -->
+      <!-- Banner Legal -->
       <div class="section-card">
-        <h3 class="section-title">Banner Legal Inferior (Ticker)</h3>
+        <h3 class="section-title">
+          <span>Banner Legal / Ticker Inferior</span>
+          <span class="info-btn" onclick="showInfoModal('Banner Legal', 'Muestra un texto deslizable o marquesina fija en la parte inferior.')">?</span>
+        </h3>
         <div class="form-row">
           <div style="flex: 3;">
-            <label>Texto del Banner</label>
-            <input type="text" id="legalBannerText" placeholder="Portanko Abogados e Inmobiliaria - Asesoría e Inversiones en Neuquén" oninput="updateBannerPreview()">
+            <label>Texto Informativo</label>
+            <input type="text" id="legalBannerText" placeholder="Portanko Abogados e Inmobiliaria" oninput="updateBannerPreview()">
           </div>
           <div style="flex: 1;">
             <label>Mostrar Banner</label>
@@ -166,24 +289,39 @@
 
       <!-- Playlist -->
       <div class="section-card">
-        <h3 class="section-title">Secuencia de Reproducción</h3>
+        <h3 class="section-title">
+          <span>Secuencia de Reproducción</span>
+          <span class="info-btn" onclick="showInfoModal('Playlist', 'Listado de contenidos asignados a esta TV.')">?</span>
+        </h3>
         <div id="playlistContainer"><p style="color:#94a3b8;">Cargando...</p></div>
       </div>
     </div>
 
-    <!-- Vista Previa Interactiva (Drag & Drop Badges) -->
+    <!-- Vista Previa Interactiva con Tamaño de Pantalla Físico -->
     <div>
       <div class="section-card" style="position: sticky; top: 24px;">
         <h3 class="section-title">
-          <span>Vista Previa e Insignias</span>
-          <small style="font-size:10px; color:#94a3b8; font-weight:normal;">(Arrastra la insignia)</small>
+          <span>Vista Previa Simulación TV</span>
+          <small id="tvSizeBadge" style="font-size:11px; color:#38bdf8; font-weight:bold;">43" (1080x1920)</small>
         </h3>
         <div class="preview-stage">
-          <div id="previewScreen" class="preview-screen orient-270">
-            <div id="badgePreview" class="draggable-badge" style="top: 10px; left: 10px; background: #d97706;">OPORTUNIDAD</div>
+          <div id="previewScreen" class="preview-screen orient-270 size-43">
+            <div id="badgePreview" class="draggable-badge" style="top: 10px; left: 10px; background: #d97706; display:none;"></div>
             <div id="legalBannerPreview" class="legal-banner-overlay">Portanko Abogados e Inmobiliaria</div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP / MODAL UNIVERSAL -->
+  <div id="customModal" class="modal-overlay">
+    <div class="modal-card">
+      <div id="modalTitle" class="modal-title">Confirmación Requerida</div>
+      <div id="modalBody" class="modal-body">¿Está seguro de realizar esta acción en el sistema?</div>
+      <div class="modal-actions" id="modalActions">
+        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+        <button id="modalConfirmBtn" class="btn-modal-confirm">Confirmar</button>
       </div>
     </div>
   </div>
@@ -208,9 +346,28 @@
 
     let currentTV = "tv1";
     let tvPlaylist = [];
-    let badgePos = { x: 10, y: 10 };
 
-    // 1. Escuchar la colección completa de portanko_tvs para armar la botonera dinámica
+    function closeModal() { document.getElementById('customModal').classList.remove('active'); }
+
+    function showInfoModal(title, text) {
+      document.getElementById('modalTitle').innerText = `ℹ️ INSTRUCTIVO: ${title}`;
+      document.getElementById('modalBody').innerText = text;
+      document.getElementById('modalActions').innerHTML = `<button class="btn-modal-confirm" onclick="closeModal()">Entendido</button>`;
+      document.getElementById('customModal').classList.add('active');
+    }
+
+    function showConfirmModal(title, text, onConfirmAction, isDanger = false) {
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalBody').innerText = text;
+      const confirmBtnClass = isDanger ? 'btn-modal-danger' : 'btn-modal-confirm';
+      document.getElementById('modalActions').innerHTML = `
+        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="${confirmBtnClass}" id="execConfirmBtn">Confirmar Cambio</button>
+      `;
+      document.getElementById('execConfirmBtn').onclick = () => { closeModal(); onConfirmAction(); };
+      document.getElementById('customModal').classList.add('active');
+    }
+
     function listenAllTVs() {
       db.collection('portanko_tvs').onSnapshot(snapshot => {
         const tvContainer = document.getElementById('tvContainer');
@@ -224,7 +381,10 @@
             const data = doc.data();
             const btn = document.createElement('button');
             btn.className = `tv-btn ${tvId === currentTV ? 'active' : ''}`;
-            btn.innerText = data.name || tvId.toUpperCase();
+            btn.innerHTML = `
+              <span>${data.name || tvId.toUpperCase()}</span>
+              <span class="info-btn" onclick="event.stopPropagation(); showTVActions('${tvId}', '${data.name}')" title="Opciones">⚙️</span>
+            `;
             btn.onclick = () => selectTV(tvId);
             tvContainer.appendChild(btn);
           });
@@ -238,16 +398,47 @@
       });
     }
 
-    function selectTV(tvId) {
-      currentTV = tvId;
-      loadTVConfig();
+    function showTVActions(tvId, tvName) {
+      document.getElementById('modalTitle').innerText = `GESTIÓN DE TV: ${tvName}`;
+      const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+      const tvUrl = `${baseUrl}?tv=${tvId}`;
+
+      document.getElementById('modalBody').innerHTML = `
+        <p style="margin-bottom:12px;"><strong>URL del Televisor:</strong></p>
+        <input type="text" value="${tvUrl}" readonly onclick="this.select()" style="margin-bottom:16px;">
+        <p>¿Deseas eliminar permanentemente este televisor?</p>
+      `;
+
+      document.getElementById('modalActions').innerHTML = `
+        <button class="btn-modal-cancel" onclick="closeModal()">Cerrar</button>
+        <button class="btn-modal-danger" onclick="requestDeleteTV('${tvId}')">Eliminar TV</button>
+      `;
+
+      document.getElementById('customModal').classList.add('active');
     }
+
+    function requestDeleteTV(tvId) {
+      closeModal();
+      showConfirmModal(
+        'RECONFIRMACIÓN DE SEGURIDAD',
+        `¿Desea eliminar definitivamente el televisor '${tvId}'?`,
+        async () => {
+          await db.collection('portanko_tvs').doc(tvId).delete();
+          currentTV = 'tv1';
+          loadTVConfig();
+        },
+        true
+      );
+    }
+
+    function selectTV(tvId) { currentTV = tvId; loadTVConfig(); }
 
     function loadTVConfig() {
       db.collection('portanko_tvs').doc(currentTV).onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data();
           document.getElementById('orientationSelect').value = data.orientation || 270;
+          if (data.tvSize) document.getElementById('sizeSelect').value = data.tvSize;
           updatePreviewOrientation();
 
           if (data.audioSettings) {
@@ -270,16 +461,21 @@
 
     function updatePreviewOrientation() {
       const orient = document.getElementById('orientationSelect').value;
+      const size = document.getElementById('sizeSelect').value;
       const screen = document.getElementById('previewScreen');
-      screen.className = 'preview-screen orient-' + orient;
+      const badge = document.getElementById('tvSizeBadge');
+      
+      screen.className = `preview-screen orient-${orient} size-${size}`;
+      badge.innerText = `${size}" Pulgadas Simulación`;
     }
 
     function updateBadgeText() {
-      document.getElementById('badgePreview').innerText = document.getElementById('badgeSelect').value;
-    }
-
-    function updateBadgeColor() {
-      document.getElementById('badgePreview').style.background = document.getElementById('badgeColor').value;
+      const badgeVal = document.getElementById('badgeSelect').value;
+      const badgePreview = document.getElementById('badgePreview');
+      if(badgeVal) {
+        badgePreview.innerText = badgeVal;
+        badgePreview.style.display = 'block';
+      } else { badgePreview.style.display = 'none'; }
     }
 
     function updateBannerPreview() {
@@ -307,15 +503,49 @@
             <img src="${item.url}" class="playlist-thumb" onerror="this.src='https://via.placeholder.com/45?text=Video'">
             <div>
               <strong style="font-size:12px; display:block;">${item.title || 'Slide ' + (index+1)}</strong>
-              <small style="color:#94a3b8;">${item.price ? item.price + ' | ' : ''}${item.type === 'video' ? 'Video MP4' : item.duration + 's'}</small>
+              <small style="color:#94a3b8;">${item.type === 'video' ? 'Video MP4 (Auto)' : item.duration + 's'}</small>
             </div>
           </div>
-          <div>
-            <button style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="deleteItem(${index})">Eliminar</button>
+          <div style="display:flex; gap:6px;">
+            <button style="background:#d97706; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="requestEditItem(${index})">Editar</button>
+            <button style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;" onclick="requestDeleteItem(${index})">Eliminar</button>
           </div>
         `;
         container.appendChild(itemDiv);
       });
+    }
+
+    function requestEditItem(index) {
+      const item = tvPlaylist[index];
+      const newTitle = prompt("Modificar Título / Referencia:", item.title);
+      if (newTitle === null) return;
+
+      let newDuration = item.duration;
+      if (item.type !== 'video') {
+        newDuration = parseInt(prompt("Modificar Duración en Segundos:", item.duration)) || item.duration;
+      }
+
+      showConfirmModal(
+        'CONFIRMAR EDICIÓN DE SLIDE',
+        `¿Desea aplicar los cambios a '${newTitle}'?`,
+        async () => {
+          tvPlaylist[index].title = newTitle;
+          tvPlaylist[index].duration = newDuration;
+          await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
+        }
+      );
+    }
+
+    function requestDeleteItem(index) {
+      showConfirmModal(
+        'CONFIRMAR ELIMINACIÓN',
+        `¿Desea eliminar el slide '${tvPlaylist[index].title || 'Seleccionado'}'?`,
+        async () => {
+          tvPlaylist.splice(index, 1);
+          await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
+        },
+        true
+      );
     }
 
     async function uploadMedia() {
@@ -323,95 +553,85 @@
       const file = fileInput.files[0];
       if (!file) return alert("Selecciona una imagen o video.");
 
-      const isVideo = file.type.includes('video');
-      const storageRef = storage.ref(`portanko/${currentTV}/${Date.now()}_${file.name}`);
+      showConfirmModal(
+        'CONFIRMAR SUBIDA DE ARCHIVO',
+        `¿Desea subir e integrar el archivo '${file.name}' a la pantalla ${currentTV}?`,
+        async () => {
+          const isVideo = file.type.includes('video');
+          const storageRef = storage.ref(`portanko/${currentTV}/${Date.now()}_${file.name}`);
 
-      try {
-        const snapshot = await storageRef.put(file);
-        const downloadURL = await snapshot.ref.getDownloadURL();
+          try {
+            const snapshot = await storageRef.put(file);
+            const downloadURL = await snapshot.ref.getDownloadURL();
 
-        const newItem = {
-          title: document.getElementById('itemTitle').value || file.name,
-          price: document.getElementById('itemPrice').value || "",
-          url: downloadURL,
-          type: isVideo ? 'video' : 'image',
-          duration: isVideo ? null : parseInt(document.getElementById('mediaDuration').value),
-          badge: {
-            text: document.getElementById('badgeSelect').value,
-            color: document.getElementById('badgeColor').value,
-            posX: badgePos.x,
-            posY: badgePos.y
+            const newItem = {
+              title: document.getElementById('itemTitle').value || file.name,
+              url: downloadURL,
+              type: isVideo ? 'video' : 'image',
+              duration: isVideo ? null : parseInt(document.getElementById('mediaDuration').value),
+              badgeText: document.getElementById('badgeSelect').value || null
+            };
+
+            tvPlaylist.push(newItem);
+            await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
+            fileInput.value = "";
+          } catch (err) {
+            console.error(err);
+            alert("Error al subir archivo.");
           }
-        };
-
-        tvPlaylist.push(newItem);
-        await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
-
-        fileInput.value = "";
-        alert("Contenido subido e integrado a " + currentTV);
-      } catch (err) {
-        console.error(err);
-        alert("Error al subir multimedia.");
-      }
-    }
-
-    async function deleteItem(index) {
-      if (confirm("¿Eliminar este slide de la playlist?")) {
-        tvPlaylist.splice(index, 1);
-        await db.collection('portanko_tvs').doc(currentTV).set({ playlist: tvPlaylist }, { merge: true });
-      }
+        }
+      );
     }
 
     async function addNewTV() {
-      const tvName = prompt("Nombre de la nueva TV (ej. TV 2 - Recepción Abogados):");
+      const tvName = prompt("Nombre de la nueva TV (ej. TV 2 - Recepción):");
       if (!tvName) return;
 
-      const tvId = tvName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-      
-      await db.collection('portanko_tvs').doc(tvId).set({
-        name: tvName,
-        orientation: 270,
-        audioSettings: { enabled: true, audioUrl: "", volume: 0.5 },
-        legalBanner: { text: "Portanko Abogados e Inmobiliaria", show: true },
-        playlist: []
-      });
+      const tvId = tvName.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+      const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', 'index.html');
+      const tvUrl = `${baseUrl}?tv=${tvId}`;
 
-      selectTV(tvId);
+      showConfirmModal(
+        'CONFIRMAR CREACIÓN DE TELEVISOR',
+        `¿Desea dar de alta la pantalla '${tvName}' (${tvId})?`,
+        async () => {
+          await db.collection('portanko_tvs').doc(tvId).set({
+            name: tvName,
+            orientation: 270,
+            tvSize: "43",
+            audioSettings: { enabled: true, audioUrl: "", volume: 0.5 },
+            legalBanner: { text: "Portanko Abogados e Inmobiliaria", show: true },
+            playlist: []
+          });
+
+          showInfoModal('URL DE TU NUEVA TV', `Configura la siguiente dirección en la Smart TV:\n\n${tvUrl}`);
+          selectTV(tvId);
+        }
+      );
     }
 
-    function saveTVConfig() {
-      const orientation = parseInt(document.getElementById('orientationSelect').value);
-      const enabled = document.getElementById('audioEnabled').value === "true";
-      const audioUrl = document.getElementById('audioUrl').value;
-      const volume = parseFloat(document.getElementById('audioVolume').value);
-      const bannerText = document.getElementById('legalBannerText').value;
-      const showBanner = document.getElementById('showLegalBanner').value === "true";
+    function requestSaveTVConfig() {
+      showConfirmModal(
+        'CONFIRMAR AJUSTES GENERALES',
+        `¿Desea guardar la orientación, pulgadas, banner y música de fondo para ${currentTV}?`,
+        async () => {
+          const orientation = parseInt(document.getElementById('orientationSelect').value);
+          const tvSize = document.getElementById('sizeSelect').value;
+          const enabled = document.getElementById('audioEnabled').value === "true";
+          const audioUrl = document.getElementById('audioUrl').value;
+          const volume = parseFloat(document.getElementById('audioVolume').value);
+          const bannerText = document.getElementById('legalBannerText').value;
+          const showBanner = document.getElementById('showLegalBanner').value === "true";
 
-      db.collection('portanko_tvs').doc(currentTV).set({
-        orientation: orientation,
-        audioSettings: { enabled, audioUrl, volume },
-        legalBanner: { text: bannerText, show: showBanner }
-      }, { merge: true }).then(() => {
-        alert("Configuración de " + currentTV + " guardada en Firestore.");
-      });
+          await db.collection('portanko_tvs').doc(currentTV).set({
+            orientation: orientation,
+            tvSize: tvSize,
+            audioSettings: { enabled, audioUrl, volume },
+            legalBanner: { text: bannerText, show: showBanner }
+          }, { merge: true });
+        }
+      );
     }
-
-    // Lógica Drag & Drop para la Insignia en Vista Previa
-    const badgePreview = document.getElementById('badgePreview');
-    const previewScreen = document.getElementById('previewScreen');
-    let isDragging = false;
-
-    badgePreview.addEventListener('mousedown', (e) => { isDragging = true; });
-    document.addEventListener('mouseup', () => { isDragging = false; });
-    previewScreen.addEventListener('mousemove', (e) => {
-      if (!isDragging) return;
-      const rect = previewScreen.getBoundingClientRect();
-      let x = e.clientX - rect.left - 20;
-      let y = e.clientY - rect.top - 10;
-      badgePreview.style.left = `${x}px`;
-      badgePreview.style.top = `${y}px`;
-      badgePos = { x, y };
-    });
 
     function logout() {
       sessionStorage.removeItem("portanko_auth");
